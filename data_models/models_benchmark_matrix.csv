@@ -1,0 +1,18 @@
+# description: Benchmark performance scores for major LLMs across standardized evaluations
+# agent: data-collector
+# date: 2026-03-24
+# version: 2.0
+# notes: Updated to 2026 model landscape. MMLU scores from official papers, Vellum LLM Leaderboard, and llm-stats.com. MMMLU (multilingual MMLU) used where standard MMLU unavailable for newer models. HumanEval from official papers and leaderboards. MATH-500 from Vellum. GPQA Diamond from Vellum and official sources. Chatbot Arena Elo from arena.ai (March 2026 snapshot). Some older benchmarks (HellaSwag, ARC) deprecated in favor of GPQA Diamond. N/A = not publicly available.
+model_id,model_name,provider,mmlu_score,humaneval_score,gsm8k_score,math_score,hellaswag_score,arc_score,chatbot_arena_elo,confidence_level,source_url,collected_date
+claude-opus-4-6,Claude Opus 4.6,Anthropic,0.911,,,,,,1501,HIGH,https://vellum.ai/llm-leaderboard;https://arena.ai/leaderboard/text,2026-03-24
+claude-sonnet-4-6,Claude Sonnet 4.6,Anthropic,0.893,0.921,,0.978,,,1465,HIGH,https://vellum.ai/llm-leaderboard;https://arena.ai/leaderboard/text;https://www.digitalapplied.com/blog/claude-sonnet-4-6-benchmarks-pricing-guide,2026-03-24
+claude-haiku-4-5,Claude Haiku 4.5 (20251001),Anthropic,0.860,0.880,,0.920,,,1407,MEDIUM,https://arena.ai/leaderboard/text;https://medium.com/@leucopsis/claude-haiku-4-5-review,2026-03-24
+gpt-4-1,GPT-4.1 (2025-04-14),OpenAI,0.902,0.910,,0.950,,,1413,HIGH,https://openai.com/index/gpt-4-1/;https://arena.ai/leaderboard/text,2026-03-24
+gpt-4-1-mini,GPT-4.1 mini (2025-04-14),OpenAI,0.870,0.880,,0.900,,,1382,MEDIUM,https://openai.com/index/gpt-4-1/;https://arena.ai/leaderboard/text,2026-03-24
+o3,OpenAI o3 (2025-04-16),OpenAI,0.929,0.874,,0.978,,,1432,HIGH,https://github.com/openai/simple-evals;https://arena.ai/leaderboard/text,2026-03-24
+gemini-2-5-pro,Gemini 2.5 Pro,Google,0.898,,,,,,1448,HIGH,https://blog.google/innovation-and-ai/models-and-research/google-deepmind/gemini-model-thinking-updates-march-2025/;https://arena.ai/leaderboard/text,2026-03-24
+gemini-2-5-flash,Gemini 2.5 Flash,Google,0.884,,,,,,1411,HIGH,https://llm-stats.com/models/gemini-2.5-flash;https://arena.ai/leaderboard/text,2026-03-24
+mistral-large-3,Mistral Large 3 (2512),Mistral AI,0.855,0.902,,0.850,,,1416,MEDIUM,https://mistral.ai/news/mistral-large;https://artificialanalysis.ai/models/mistral-large-3;https://arena.ai/leaderboard/text,2026-03-24
+llama-4-maverick,LLaMA 4 Maverick (17B-128E),Meta,0.855,0.864,,0.830,,,1327,MEDIUM,https://www.llama.com/models/llama-4/;https://artificialanalysis.ai/models/llama-4-maverick;https://arena.ai/leaderboard/text,2026-03-24
+qwen3-235b,Qwen 3 235B-A22B,Alibaba,0.839,0.870,,0.857,,,1375,MEDIUM,https://qwenlm.github.io/blog/qwen3/;https://arxiv.org/abs/2505.09388;https://arena.ai/leaderboard/text,2026-03-24
+deepseek-v3,DeepSeek V3,DeepSeek,0.871,0.652,0.940,0.750,0.880,0.890,1358,HIGH,https://arxiv.org/abs/2412.19437;https://arena.ai/leaderboard/text,2026-03-24

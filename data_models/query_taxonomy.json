@@ -1,0 +1,197 @@
+{
+  "metadata": {
+    "description": "Structured taxonomy of query types for LLM routing, with complexity levels, model requirements, and benchmark coverage",
+    "agent": "data-collector",
+    "date": "2026-03-23",
+    "version": "1.0"
+  },
+  "categories": [
+    {
+      "name": "coding",
+      "description": "Code generation tasks: writing functions, classes, scripts from natural language specifications",
+      "examples": [
+        "Write a Python function that merges two sorted lists",
+        "Create a REST API endpoint with FastAPI that handles user authentication",
+        "Implement a binary search tree in TypeScript"
+      ],
+      "complexity_level": "medium-complex",
+      "typical_model_requirements": {
+        "min_capability": "strong code generation (HumanEval > 70%)",
+        "preferred_context_window": "32k+",
+        "latency_sensitivity": "medium"
+      },
+      "benchmark_coverage": ["HumanEval", "MBPP", "HumanEval+", "SWE-bench"]
+    },
+    {
+      "name": "math_reasoning",
+      "description": "Mathematical problem solving requiring multi-step reasoning, proofs, or numerical computation",
+      "examples": [
+        "Solve: If f(x) = 3x^2 - 2x + 1, find f'(x) and the critical points",
+        "A train leaves station A at 60km/h. Another leaves B at 80km/h toward A. If A and B are 280km apart, when do they meet?",
+        "Prove that the sum of the first n odd numbers equals n^2"
+      ],
+      "complexity_level": "complex",
+      "typical_model_requirements": {
+        "min_capability": "strong math reasoning (GSM8K > 85%, MATH > 50%)",
+        "preferred_context_window": "8k+",
+        "latency_sensitivity": "low"
+      },
+      "benchmark_coverage": ["GSM8K", "MATH", "AIME", "GPQA"]
+    },
+    {
+      "name": "creative_writing",
+      "description": "Open-ended creative text generation: stories, poetry, marketing copy, essays with stylistic requirements",
+      "examples": [
+        "Write a short story about a robot discovering emotions, in the style of Asimov",
+        "Compose a professional LinkedIn post announcing a product launch",
+        "Write a persuasive essay on the benefits of remote work"
+      ],
+      "complexity_level": "medium",
+      "typical_model_requirements": {
+        "min_capability": "high fluency, Chatbot Arena Elo > 1250",
+        "preferred_context_window": "8k+",
+        "latency_sensitivity": "low"
+      },
+      "benchmark_coverage": ["AlpacaEval", "MT-Bench", "Chatbot Arena"]
+    },
+    {
+      "name": "factual_qa",
+      "description": "Factual question answering requiring world knowledge, lookup, or retrieval from context",
+      "examples": [
+        "What is the capital of Burkina Faso?",
+        "Explain the difference between TCP and UDP protocols",
+        "What were the main causes of the French Revolution?"
+      ],
+      "complexity_level": "simple",
+      "typical_model_requirements": {
+        "min_capability": "broad knowledge (MMLU > 70%)",
+        "preferred_context_window": "4k+",
+        "latency_sensitivity": "high"
+      },
+      "benchmark_coverage": ["MMLU", "TruthfulQA", "ARC", "HellaSwag"]
+    },
+    {
+      "name": "multi_step_reasoning",
+      "description": "Complex reasoning chains: logical deduction, planning, multi-hop inference, causal reasoning",
+      "examples": [
+        "Given these 5 constraints, determine the optimal seating arrangement for 8 guests",
+        "Analyze the following business scenario and recommend a strategy with pros/cons",
+        "If all bloops are razzles and some razzles are lazzles, what can we conclude?"
+      ],
+      "complexity_level": "complex",
+      "typical_model_requirements": {
+        "min_capability": "strong reasoning (BBH > 70%, GPQA > 40%)",
+        "preferred_context_window": "16k+",
+        "latency_sensitivity": "low"
+      },
+      "benchmark_coverage": ["BBH", "GPQA", "ARC-Challenge", "HellaSwag"]
+    },
+    {
+      "name": "summarization",
+      "description": "Condensing long documents, articles, or conversations into concise summaries",
+      "examples": [
+        "Summarize this 10-page research paper in 3 bullet points",
+        "Provide an executive summary of this quarterly financial report",
+        "Summarize the key decisions from this meeting transcript"
+      ],
+      "complexity_level": "medium",
+      "typical_model_requirements": {
+        "min_capability": "good comprehension, long context support",
+        "preferred_context_window": "128k+",
+        "latency_sensitivity": "medium"
+      },
+      "benchmark_coverage": ["MT-Bench", "AlpacaEval"]
+    },
+    {
+      "name": "translation",
+      "description": "Translating text between natural languages, preserving meaning, tone, and cultural nuance",
+      "examples": [
+        "Translate this legal contract from English to French",
+        "Translate this Japanese manga dialogue to natural English",
+        "Convert this technical documentation from Chinese to English"
+      ],
+      "complexity_level": "medium",
+      "typical_model_requirements": {
+        "min_capability": "multilingual proficiency (MMMLU > 70%)",
+        "preferred_context_window": "16k+",
+        "latency_sensitivity": "medium"
+      },
+      "benchmark_coverage": ["MMMLU", "WMT benchmarks"]
+    },
+    {
+      "name": "classification",
+      "description": "Categorizing inputs into predefined labels: sentiment analysis, topic classification, intent detection",
+      "examples": [
+        "Classify this customer review as positive, negative, or neutral",
+        "Determine if this email is spam or legitimate",
+        "Categorize these support tickets by urgency: low, medium, high, critical"
+      ],
+      "complexity_level": "simple",
+      "typical_model_requirements": {
+        "min_capability": "consistent structured output, low cost preferred",
+        "preferred_context_window": "4k+",
+        "latency_sensitivity": "high"
+      },
+      "benchmark_coverage": ["MMLU", "HellaSwag", "SuperGLUE"]
+    },
+    {
+      "name": "conversation",
+      "description": "Multi-turn dialogue: chatbot interactions, assistants, roleplay, open-ended discussion",
+      "examples": [
+        "Help me plan a two-week trip to Japan on a $3000 budget",
+        "Act as a career coach and help me prepare for a software engineering interview",
+        "Let's discuss the philosophical implications of artificial consciousness"
+      ],
+      "complexity_level": "medium",
+      "typical_model_requirements": {
+        "min_capability": "high Chatbot Arena Elo (> 1300), good instruction following",
+        "preferred_context_window": "32k+",
+        "latency_sensitivity": "high"
+      },
+      "benchmark_coverage": ["Chatbot Arena", "MT-Bench", "AlpacaEval"]
+    },
+    {
+      "name": "code_debugging",
+      "description": "Identifying and fixing bugs in existing code, explaining errors, suggesting fixes",
+      "examples": [
+        "Why does this Python function return None instead of the expected list?",
+        "Fix the race condition in this Go concurrent code",
+        "This SQL query is slow on 1M rows — optimize it"
+      ],
+      "complexity_level": "medium-complex",
+      "typical_model_requirements": {
+        "min_capability": "strong code understanding (HumanEval > 75%), good reasoning",
+        "preferred_context_window": "32k+",
+        "latency_sensitivity": "medium"
+      },
+      "benchmark_coverage": ["HumanEval", "SWE-bench", "MBPP"]
+    }
+  ],
+  "dimensions": {
+    "task_type": {
+      "values": ["coding", "math_reasoning", "creative_writing", "factual_qa", "multi_step_reasoning", "summarization", "translation", "classification", "conversation", "code_debugging"],
+      "description": "Primary task type of the query"
+    },
+    "complexity": {
+      "values": ["simple", "medium", "complex"],
+      "description": "Estimated cognitive complexity — simple: single-step recall; medium: multi-step with clear structure; complex: open-ended reasoning or generation"
+    },
+    "domain": {
+      "values": ["general", "science", "law", "medicine", "finance", "code", "creative", "education"],
+      "description": "Subject domain of the query"
+    },
+    "length_tokens": {
+      "values": ["short (<50)", "medium (50-500)", "long (>500)"],
+      "description": "Estimated input token length"
+    },
+    "language": {
+      "values": ["en", "fr", "zh", "multilingual", "other"],
+      "description": "Primary language of the query"
+    },
+    "modality": {
+      "values": ["text-only", "code", "structured-data", "multimodal"],
+      "description": "Input modality"
+    }
+  },
+  "sources": ["FLAN task taxonomy", "SuperGLUE", "BIG-Bench task descriptions", "Chatbot Arena category analysis", "HELM benchmark suite"]
+}

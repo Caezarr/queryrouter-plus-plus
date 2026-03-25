@@ -1,0 +1,78 @@
+{
+  "$schema": "https://json-schema.org/draft-07/schema#",
+  "title": "UserPreferences",
+  "description": "User preferences for multi-criteria LLM routing. Controls the optimization objective, weight distribution across axes, and hard constraints on cost, latency, and model selection.",
+  "type": "object",
+  "required": ["optimize_for"],
+  "properties": {
+    "optimize_for": {
+      "type": "string",
+      "enum": ["performance", "cost", "cost_performance", "ecology", "balanced", "custom"],
+      "description": "Primary optimization objective. Presets ('performance', 'cost', etc.) auto-assign weight vectors. Use 'custom' to provide explicit weights."
+    },
+    "weights": {
+      "type": "object",
+      "description": "Explicit weight vector for custom optimization. All values must be non-negative and sum to 1.0. Only required when optimize_for='custom'.",
+      "properties": {
+        "w_performance": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1,
+          "description": "Weight for benchmark performance axis."
+        },
+        "w_cost": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1,
+          "description": "Weight for cost efficiency axis (inverted: lower cost = higher score)."
+        },
+        "w_latency": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1,
+          "description": "Weight for inference latency axis (inverted: lower latency = higher score)."
+        },
+        "w_ecology": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1,
+          "description": "Weight for ecological impact axis (inverted: lower CO2 = higher score)."
+        }
+      },
+      "additionalProperties": false
+    },
+    "budget_per_query_usd": {
+      "type": ["number", "null"],
+      "exclusiveMinimum": 0,
+      "description": "Hard budget constraint: maximum USD cost per query. Models exceeding this are filtered out. Null = no budget limit."
+    },
+    "max_latency_ms": {
+      "type": ["integer", "null"],
+      "exclusiveMinimum": 0,
+      "description": "Hard latency constraint: maximum acceptable latency in milliseconds. Models exceeding this are filtered out. Null = no latency limit."
+    },
+    "eco_mode": {
+      "type": "boolean",
+      "default": false,
+      "description": "When true, applies an ecological bonus to models with known low CO2 footprints, biasing selection toward greener options."
+    },
+    "allowed_models": {
+      "type": ["array", "null"],
+      "items": {"type": "string"},
+      "description": "Whitelist of model_ids. If non-null, only these models are considered. Null = all models eligible."
+    },
+    "excluded_models": {
+      "type": ["array", "null"],
+      "items": {"type": "string"},
+      "description": "Blacklist of model_ids to exclude from routing. Null = no exclusions."
+    }
+  },
+  "preset_weights": {
+    "description": "Default weight vectors for each optimize_for preset.",
+    "performance":       {"w_performance": 0.7, "w_cost": 0.1, "w_latency": 0.1, "w_ecology": 0.1},
+    "cost":              {"w_performance": 0.1, "w_cost": 0.7, "w_latency": 0.1, "w_ecology": 0.1},
+    "cost_performance":  {"w_performance": 0.4, "w_cost": 0.4, "w_latency": 0.1, "w_ecology": 0.1},
+    "ecology":           {"w_performance": 0.1, "w_cost": 0.1, "w_latency": 0.1, "w_ecology": 0.7},
+    "balanced":          {"w_performance": 0.25, "w_cost": 0.25, "w_latency": 0.25, "w_ecology": 0.25}
+  }
+}

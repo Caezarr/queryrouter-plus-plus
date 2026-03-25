@@ -1,0 +1,18 @@
+# description: API inference pricing and latency data for major LLMs
+# agent: data-collector
+# date: 2026-03-24
+# version: 2.0
+# notes: Updated to 2026 model landscape. Prices from official provider pages and OpenRouter (March 2026). Latency from ArtificialAnalysis.ai where available. Context windows from official documentation. Prices in USD per 1M tokens. o3 pricing excludes reasoning tokens (billed as output). DeepSeek V3 pricing reflects direct API; V3.2 is cheaper but V3 still widely served.
+model_id,model_name,provider,input_price_per_1m_tokens_usd,output_price_per_1m_tokens_usd,context_window_k,avg_latency_ms,confidence_level,source_url,collected_date
+claude-opus-4-6,Claude Opus 4.6,Anthropic,5.00,25.00,1000,,HIGH,https://platform.claude.com/docs/en/about-claude/pricing,2026-03-24
+claude-sonnet-4-6,Claude Sonnet 4.6,Anthropic,3.00,15.00,1000,,HIGH,https://platform.claude.com/docs/en/about-claude/pricing,2026-03-24
+claude-haiku-4-5,Claude Haiku 4.5 (20251001),Anthropic,1.00,5.00,200,,HIGH,https://platform.claude.com/docs/en/about-claude/pricing,2026-03-24
+gpt-4-1,GPT-4.1 (2025-04-14),OpenAI,2.00,8.00,1000,,HIGH,https://openai.com/api/pricing/,2026-03-24
+gpt-4-1-mini,GPT-4.1 mini (2025-04-14),OpenAI,0.40,1.60,1000,,HIGH,https://openai.com/api/pricing/,2026-03-24
+o3,OpenAI o3 (2025-04-16),OpenAI,2.00,8.00,200,,HIGH,https://openai.com/api/pricing/,2026-03-24
+gemini-2-5-pro,Gemini 2.5 Pro,Google,1.25,10.00,1000,,HIGH,https://ai.google.dev/gemini-api/docs/pricing,2026-03-24
+gemini-2-5-flash,Gemini 2.5 Flash,Google,0.30,2.50,1000,,HIGH,https://ai.google.dev/gemini-api/docs/pricing,2026-03-24
+mistral-large-3,Mistral Large 3 (2512),Mistral AI,0.50,1.50,262,,HIGH,https://mistral.ai/pricing,2026-03-24
+llama-4-maverick,LLaMA 4 Maverick (17B-128E),Meta,0.27,0.85,1000,,MEDIUM,https://artificialanalysis.ai/models/llama-4-maverick;https://openrouter.ai/models,2026-03-24
+qwen3-235b,Qwen 3 235B-A22B,Alibaba,0.15,1.50,131,,MEDIUM,https://openrouter.ai/qwen/qwen3-235b-a22b;https://qwenlm.github.io/blog/qwen3/,2026-03-24
+deepseek-v3,DeepSeek V3,DeepSeek,0.28,0.42,128,,HIGH,https://api-docs.deepseek.com/quick_start/pricing;https://pricepertoken.com/pricing-page/model/deepseek-deepseek-chat,2026-03-24
