@@ -219,6 +219,24 @@ class CompatibilityScorer:
         perf = float(np.dot(bench_weights, bench_vec))
         return float(np.clip(perf, 0.0, 1.0))
 
+    def cost_score(
+        self, query_features: np.ndarray, model_profile: ModelProfile
+    ) -> float:
+        """Public interface for the cost axis score. See ``_cost_score``."""
+        return self._cost_score(query_features, model_profile)
+
+    def latency_score(
+        self, query_features: np.ndarray, model_profile: ModelProfile
+    ) -> float:
+        """Public interface for the latency axis score. See ``_latency_score``."""
+        return self._latency_score(query_features, model_profile)
+
+    def ecology_score(
+        self, query_features: np.ndarray, model_profile: ModelProfile
+    ) -> float:
+        """Public interface for the ecology axis score. See ``_ecology_score``."""
+        return self._ecology_score(query_features, model_profile)
+
     def _cost_score(
         self, query_features: np.ndarray, model_profile: ModelProfile
     ) -> float:

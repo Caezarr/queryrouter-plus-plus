@@ -21,6 +21,12 @@ Key components:
 
 __version__ = "0.2.0"
 
+from queryrouter.core.query_featurizer import QueryFeaturizer
+from queryrouter.core.model_registry import ModelRegistry
+from queryrouter.core.compatibility_scorer import CompatibilityScorer
+from queryrouter.core.preference_engine import PreferenceEngine
+from queryrouter.core.router import QueryRouter
+
 __all__ = [
     "__version__",
     "QueryFeaturizer",

@@ -19,7 +19,6 @@ from __future__ import annotations
 import json
 import os
 import time
-from pathlib import Path
 from typing import Any
 
 import httpx
@@ -27,8 +26,8 @@ from fastapi import APIRouter, HTTPException, Request
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel, Field
 
+from queryrouter.api.dependencies import get_router
 from queryrouter.api.schemas import RoutingRequest, UserPreferences
-from queryrouter.core.router import QueryRouter
 from queryrouter.data.loaders import ModelProfile
 
 router = APIRouter(prefix="/v1")
@@ -40,7 +39,10 @@ router = APIRouter(prefix="/v1")
 # Map provider name → (base_url, api_key_env_var)
 PROVIDER_CONFIG: dict[str, tuple[str, str]] = {
     "OpenAI": ("https://api.openai.com/v1", "OPENAI_API_KEY"),
-    "Anthropic": ("https://api.anthropic.com/v1", "ANTHROPIC_API_KEY"),
+    # Anthropic does not offer an OpenAI-compatible endpoint natively.
+    # Users must set QUERYROUTER_ANTHROPIC_BASE_URL to an OpenAI-compatible
+    # proxy (e.g. LiteLLM) or leave empty to disable direct Anthropic routing.
+    "Anthropic": ("", "ANTHROPIC_API_KEY"),
     "Google": ("https://generativelanguage.googleapis.com/v1beta/openai", "GOOGLE_API_KEY"),
     "DeepSeek": ("https://api.deepseek.com/v1", "DEEPSEEK_API_KEY"),
     "Meta": ("https://api.together.xyz/v1", "TOGETHER_API_KEY"),
@@ -87,24 +89,6 @@ class ChatCompletionRequest(BaseModel):
 
 
 # ---------------------------------------------------------------------------
-# Lazy router cache
-# ---------------------------------------------------------------------------
-
-_qr: QueryRouter | None = None
-
-# Resolve data_models relative to the real file location (not symlink)
-_DATA_DIR = Path(__file__).resolve().parents[1] / "data_models"
-
-
-def _get_qr() -> QueryRouter:
-    global _qr
-    if _qr is None:
-        data_dir = _DATA_DIR if _DATA_DIR.exists() else None
-        _qr = QueryRouter(strategy="direct", data_dir=data_dir)
-    return _qr
-
-
-# ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
 
@@ -122,19 +106,25 @@ def _extract_query(messages: list[ChatMessage]) -> str:
     return ""
 
 
+_VALID_PREFERENCES = {"performance", "cost", "cost_performance", "ecology", "balanced"}
+
+
 def _resolve_preference(request: ChatCompletionRequest) -> str:
     """Resolve routing preference from request fields or model name."""
     # 1. Explicit field
     if request.routing_preference:
-        return request.routing_preference
+        pref = request.routing_preference
+        return pref if pref in _VALID_PREFERENCES else "balanced"
 
     # 2. From extra body / modelKwargs (LibreChat sends custom params here)
-    extra = getattr(request, "__pydantic_extra__", {}) or {}
+    extra = request.model_extra or {}
     if "routing_preference" in extra:
-        return str(extra["routing_preference"])
+        pref = str(extra["routing_preference"])
+        return pref if pref in _VALID_PREFERENCES else "balanced"
     model_kwargs = extra.get("modelKwargs", {})
     if isinstance(model_kwargs, dict) and "routing_preference" in model_kwargs:
-        return str(model_kwargs["routing_preference"])
+        pref = str(model_kwargs["routing_preference"])
+        return pref if pref in _VALID_PREFERENCES else "balanced"
 
     # 3. Encoded in model name: "queryrouter-cost", "queryrouter-ecology", etc.
     model = request.model.lower()
@@ -172,7 +162,7 @@ def _build_upstream_body(
 @router.get("/models")
 def list_models() -> dict:
     """OpenAI-compatible model listing."""
-    qr = _get_qr()
+    qr = get_router()
     models = qr.registry.get_all()
     now = int(time.time())
     return {
@@ -203,7 +193,7 @@ async def chat_completions(request: ChatCompletionRequest) -> Any:
     Accepts standard OpenAI chat format. Routes to the best model based
     on the user's preference, then proxies the request to the provider.
     """
-    qr = _get_qr()
+    qr = get_router()
 
     # --- Route ---
     preference = _resolve_preference(request)
@@ -302,4 +292,7 @@ async def _stream_proxy(
                     except json.JSONDecodeError:
                         pass
 
-                yield f"{line}\n"
+                if line.startswith("data:"):
+                    yield f"{line}\n\n"
+                else:
+                    yield f"{line}\n"

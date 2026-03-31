@@ -147,79 +147,78 @@ class RouterTrainer:
             cv_scores=cv_scores.tolist(),
         )
 
+    # -- Hyperparameter search spaces per method --
+
+    _SEARCH_SPACES: dict[str, dict[str, tuple]] = {
+        "xgboost": {
+            "n_estimators": ("int", 50, 300),
+            "max_depth": ("int", 3, 10),
+            "learning_rate": ("float", 0.01, 0.3, True),
+            "subsample": ("float", 0.6, 1.0, False),
+            "colsample_bytree": ("float", 0.6, 1.0, False),
+        },
+        "random_forest": {
+            "n_estimators": ("int", 50, 300),
+            "max_depth": ("int", 3, 20),
+            "min_samples_split": ("int", 2, 10),
+            "min_samples_leaf": ("int", 1, 5),
+        },
+        "logistic": {
+            "C": ("float", 0.01, 100.0, True),
+            "max_iter": ("int", 200, 1000),
+        },
+    }
+
+    _DEFAULTS: dict[str, dict[str, Any]] = {
+        "xgboost": {
+            "n_estimators": 100, "max_depth": 6, "learning_rate": 0.1,
+            "subsample": 0.8, "colsample_bytree": 0.8,
+        },
+        "random_forest": {
+            "n_estimators": 100, "max_depth": 10,
+            "min_samples_split": 2, "min_samples_leaf": 1,
+        },
+        "logistic": {"C": 1.0, "max_iter": 500},
+    }
+
+    def _suggest_params(self, trial: Any, method: str) -> dict[str, Any]:
+        """Use Optuna trial to suggest hyperparameters for the method."""
+        params: dict[str, Any] = {}
+        for key, spec in self._SEARCH_SPACES[method].items():
+            if spec[0] == "int":
+                params[key] = trial.suggest_int(key, spec[1], spec[2])
+            else:
+                params[key] = trial.suggest_float(key, spec[1], spec[2], log=spec[3])
+        return params
+
     def _create_model(
         self, trial: Any, method: str, n_classes: int
     ) -> Any:
-        """Create a model instance with Optuna-suggested hyperparameters.
-
-        Args:
-            trial: Optuna trial object.
-            method: Algorithm name.
-            n_classes: Number of target classes.
-
-        Returns:
-            Scikit-learn compatible classifier.
-        """
-        if method == "xgboost":
-            import xgboost as xgb
-
-            return xgb.XGBClassifier(
-                n_estimators=trial.suggest_int("n_estimators", 50, 300),
-                max_depth=trial.suggest_int("max_depth", 3, 10),
-                learning_rate=trial.suggest_float("learning_rate", 0.01, 0.3, log=True),
-                subsample=trial.suggest_float("subsample", 0.6, 1.0),
-                colsample_bytree=trial.suggest_float("colsample_bytree", 0.6, 1.0),
-                num_class=n_classes if n_classes > 2 else None,
-                objective="multi:softmax" if n_classes > 2 else "binary:logistic",
-                eval_metric="mlogloss" if n_classes > 2 else "logloss",
-                random_state=42,
-                verbosity=0,
-            )
-
-        if method == "random_forest":
-            from sklearn.ensemble import RandomForestClassifier
-
-            return RandomForestClassifier(
-                n_estimators=trial.suggest_int("n_estimators", 50, 300),
-                max_depth=trial.suggest_int("max_depth", 3, 20),
-                min_samples_split=trial.suggest_int("min_samples_split", 2, 10),
-                min_samples_leaf=trial.suggest_int("min_samples_leaf", 1, 5),
-                random_state=42,
-            )
-
-        # logistic
-        from sklearn.linear_model import LogisticRegression
-
-        return LogisticRegression(
-            C=trial.suggest_float("C", 0.01, 100.0, log=True),
-            max_iter=trial.suggest_int("max_iter", 200, 1000),
-            solver="lbfgs",
-            multi_class="multinomial" if n_classes > 2 else "auto",
-            random_state=42,
-        )
+        """Create a model with Optuna-suggested hyperparameters."""
+        params = self._suggest_params(trial, method)
+        return self._build_model(params, method, n_classes)
 
     def _build_model(
         self, params: dict[str, Any], method: str, n_classes: int
     ) -> Any:
-        """Build a model from a fixed parameter dict.
+        """Build a classifier from a parameter dict.
 
         Args:
-            params: Hyperparameter dict.
+            params: Hyperparameter dict (may be partial — defaults fill gaps).
             method: Algorithm name.
             n_classes: Number of target classes.
 
         Returns:
             Scikit-learn compatible classifier.
         """
+        defaults = self._DEFAULTS[method]
+        p = {k: params.get(k, v) for k, v in defaults.items()}
+
         if method == "xgboost":
             import xgboost as xgb
 
             return xgb.XGBClassifier(
-                n_estimators=params.get("n_estimators", 100),
-                max_depth=params.get("max_depth", 6),
-                learning_rate=params.get("learning_rate", 0.1),
-                subsample=params.get("subsample", 0.8),
-                colsample_bytree=params.get("colsample_bytree", 0.8),
+                **p,
                 num_class=n_classes if n_classes > 2 else None,
                 objective="multi:softmax" if n_classes > 2 else "binary:logistic",
                 eval_metric="mlogloss" if n_classes > 2 else "logloss",
@@ -230,19 +229,12 @@ class RouterTrainer:
         if method == "random_forest":
             from sklearn.ensemble import RandomForestClassifier
 
-            return RandomForestClassifier(
-                n_estimators=params.get("n_estimators", 100),
-                max_depth=params.get("max_depth", 10),
-                min_samples_split=params.get("min_samples_split", 2),
-                min_samples_leaf=params.get("min_samples_leaf", 1),
-                random_state=42,
-            )
+            return RandomForestClassifier(**p, random_state=42)
 
         from sklearn.linear_model import LogisticRegression
 
         return LogisticRegression(
-            C=params.get("C", 1.0),
-            max_iter=params.get("max_iter", 500),
+            **p,
             solver="lbfgs",
             multi_class="multinomial" if n_classes > 2 else "auto",
             random_state=42,

@@ -12,14 +12,12 @@ version: 1.0
 
 from __future__ import annotations
 
-from pathlib import Path
-
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 
+from queryrouter.api.dependencies import get_router
 from queryrouter.api.openai_compat import router as openai_router
 from queryrouter.api.schemas import RoutingRequest, RoutingResponse
-from queryrouter.core.router import QueryRouter
 
 app = FastAPI(
     title="QueryRouter++",
@@ -39,26 +37,7 @@ app.add_middleware(
 # Mount OpenAI-compatible proxy endpoints (/v1/chat/completions, /v1/models)
 app.include_router(openai_router)
 
-# Default data directory relative to workspace
-_DATA_DIR = Path(__file__).resolve().parents[1] / "data_models"
-
-# Lazy-initialized router instances
-_routers: dict[str, QueryRouter] = {}
-
-
-def _get_router(strategy: str = "direct") -> QueryRouter:
-    """Get or create a cached router instance.
-
-    Args:
-        strategy: Routing strategy name.
-
-    Returns:
-        QueryRouter instance.
-    """
-    if strategy not in _routers:
-        data_dir = _DATA_DIR if _DATA_DIR.exists() else None
-        _routers[strategy] = QueryRouter(strategy=strategy, data_dir=data_dir)  # type: ignore[arg-type]
-    return _routers[strategy]
+# Router factory is shared via api.dependencies to avoid duplication.
 
 
 @app.get("/health")
@@ -78,7 +57,7 @@ def list_models() -> dict[str, list[dict]]:
     Returns:
         Dictionary with "models" key containing list of model profile dicts.
     """
-    router = _get_router()
+    router = get_router()
     models = router.registry.get_all()
     return {
         "models": [
@@ -113,7 +92,7 @@ def route_query(request: RoutingRequest) -> RoutingResponse:
     """
     try:
         strategy = request.context.get("strategy", "direct") if request.context else "direct"
-        router = _get_router(strategy)
+        router = get_router(strategy)
         return router.route(request)
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e)) from e
@@ -134,7 +113,7 @@ def explain_routing(request: RoutingRequest) -> dict[str, str]:
     """
     try:
         strategy = request.context.get("strategy", "direct") if request.context else "direct"
-        router = _get_router(strategy)
+        router = get_router(strategy)
         explanation = router.explain(request)
         return {"explanation": explanation}
     except Exception as e:
