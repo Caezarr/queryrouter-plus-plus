@@ -17,6 +17,7 @@ from pathlib import Path
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 
+from queryrouter.api.openai_compat import router as openai_router
 from queryrouter.api.schemas import RoutingRequest, RoutingResponse
 from queryrouter.core.router import QueryRouter
 
@@ -34,6 +35,9 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# Mount OpenAI-compatible proxy endpoints (/v1/chat/completions, /v1/models)
+app.include_router(openai_router)
 
 # Default data directory relative to workspace
 _DATA_DIR = Path(__file__).resolve().parents[1] / "data_models"
