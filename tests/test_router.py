@@ -17,7 +17,7 @@ import pytest
 from queryrouter.api.schemas import RoutingRequest, UserPreferences
 from queryrouter.core.router import QueryRouter
 
-DATA_DIR = Path(__file__).resolve().parents[2] / "data"
+DATA_DIR = Path(__file__).resolve().parents[1] / "data_models"
 
 
 @pytest.fixture
@@ -68,7 +68,7 @@ class TestDirectRouting:
         )
         response = direct_router.route(request)
         # Should select a top-performing model, not the cheapest
-        assert response.recommended_model != "gpt-4o-mini"
+        assert response.recommended_model != "gpt-4-1-mini"
 
     def test_cost_preset_prefers_cheap(self, direct_router: QueryRouter) -> None:
         request = _make_request(
@@ -77,7 +77,7 @@ class TestDirectRouting:
         )
         response = direct_router.route(request)
         # The cheapest models should be preferred
-        cheap_models = {"gpt-4o-mini", "gemini-2-0-flash", "deepseek-v3"}
+        cheap_models = {"gpt-4-1-mini", "gemini-2-5-flash", "deepseek-v3"}
         assert response.recommended_model in cheap_models
 
     def test_estimated_cost_positive(self, direct_router: QueryRouter) -> None:
@@ -161,19 +161,19 @@ class TestModelFiltering:
             query="Hello",
             preferences=UserPreferences(
                 optimize_for="balanced",
-                allowed_models=["gpt-4o", "deepseek-v3"],
+                allowed_models=["gpt-4-1", "deepseek-v3"],
             ),
         )
         response = direct_router.route(request)
-        assert response.recommended_model in {"gpt-4o", "deepseek-v3"}
+        assert response.recommended_model in {"gpt-4-1", "deepseek-v3"}
 
     def test_excluded_models_filter(self, direct_router: QueryRouter) -> None:
         request = RoutingRequest(
             query="Hello",
             preferences=UserPreferences(
                 optimize_for="balanced",
-                excluded_models=["gpt-4o", "claude-3-5-sonnet", "claude-3-7-sonnet"],
+                excluded_models=["gpt-4-1", "claude-sonnet-4-6", "claude-opus-4-6"],
             ),
         )
         response = direct_router.route(request)
-        assert response.recommended_model not in {"gpt-4o", "claude-3-5-sonnet", "claude-3-7-sonnet"}
+        assert response.recommended_model not in {"gpt-4-1", "claude-sonnet-4-6", "claude-opus-4-6"}

@@ -250,6 +250,8 @@ class QueryFeaturizer:
         Returns:
             Numpy array of shape (len(queries), N_FEATURES).
         """
+        if not queries:
+            return np.empty((0, self.N_FEATURES), dtype=np.float64)
         return np.array([self.featurize(q) for q in queries], dtype=np.float64)
 
     def _detect_task_type(self, q_lower: str) -> list[float]:

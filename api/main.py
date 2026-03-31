@@ -23,7 +23,7 @@ from queryrouter.core.router import QueryRouter
 app = FastAPI(
     title="QueryRouter++",
     description="Multi-criteria LLM routing API based on formalized query-model compatibility.",
-    version="0.1.0",
+    version="0.2.0",
     license_info={"name": "MIT"},
 )
 
@@ -36,7 +36,7 @@ app.add_middleware(
 )
 
 # Default data directory relative to workspace
-_DATA_DIR = Path(__file__).resolve().parents[1] / "data"
+_DATA_DIR = Path(__file__).resolve().parents[1] / "data_models"
 
 # Lazy-initialized router instances
 _routers: dict[str, QueryRouter] = {}
@@ -64,7 +64,7 @@ def health_check() -> dict[str, str]:
     Returns:
         Dictionary with status "ok" and version info.
     """
-    return {"status": "ok", "version": "0.1.0"}
+    return {"status": "ok", "version": "0.2.0"}
 
 
 @app.get("/models")

@@ -23,12 +23,17 @@ from queryrouter.api.schemas import (
     RoutingResponse,
     UserPreferences,
 )
-from queryrouter.core.compatibility_scorer import CompatibilityScorer, WeightVector
+from queryrouter.core.compatibility_scorer import (
+    CompatibilityScorer,
+    ModelScore,
+    WeightVector,
+)
 from queryrouter.core.model_registry import ModelRegistry
 from queryrouter.core.preference_engine import PreferenceEngine
 from queryrouter.core.query_featurizer import QueryFeaturizer
 from queryrouter.data.loaders import ModelProfile
 from queryrouter.data.normalizers import FeatureNormalizer
+from queryrouter.data.utils import estimate_query_cost
 
 
 class QueryRouter:
@@ -73,7 +78,7 @@ class QueryRouter:
         self.cascade_threshold = cascade_threshold
 
         if data_dir is None:
-            data_dir = Path(__file__).resolve().parents[2] / "data"
+            data_dir = Path(__file__).resolve().parents[2] / "data_models"
 
         self.registry = ModelRegistry(data_dir)
         self.featurizer = QueryFeaturizer()
@@ -276,9 +281,14 @@ class QueryRouter:
         query_emb = query_features / (np.linalg.norm(query_features) + 1e-10)
 
         scored = []
+        w = weights.as_array()
         for model in models:
-            model_vec = self.normalizer.transform(model)
-            model_emb = model_vec / (np.linalg.norm(model_vec) + 1e-10)
+            # Use precomputed embeddings when available
+            if self._model_embeddings and model.model_id in self._model_embeddings:
+                model_emb = self._model_embeddings[model.model_id]
+            else:
+                model_vec = self.normalizer.transform(model)
+                model_emb = model_vec / (np.linalg.norm(model_vec) + 1e-10)
 
             # Cosine similarity for performance axis
             cos_sim = float(np.dot(query_emb[:len(model_emb)], model_emb))
@@ -289,12 +299,9 @@ class QueryRouter:
             lat_s = self.scorer._latency_score(query_features, model)
             eco_s = self.scorer._ecology_score(query_features, model)
 
-            w = weights.as_array()
             total = float(
                 w[0] * cos_sim + w[1] * cost_s + w[2] * lat_s + w[3] * eco_s
             )
-
-            from queryrouter.core.compatibility_scorer import ModelScore
 
             scored.append(ModelScore(
                 model_id=model.model_id,
@@ -385,9 +392,4 @@ class QueryRouter:
         Returns:
             Estimated cost in USD.
         """
-        input_tokens = int(total_tokens * 0.6)
-        output_tokens = total_tokens - input_tokens
-        return (
-            model.cost_input_per_1m * input_tokens / 1_000_000
-            + model.cost_output_per_1m * output_tokens / 1_000_000
-        )
+        return estimate_query_cost(model, total_tokens)

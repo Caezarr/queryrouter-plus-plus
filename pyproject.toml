@@ -5,7 +5,7 @@
 
 [tool.poetry]
 name = "queryrouter"
-version = "0.1.0"
+version = "0.2.0"
 description = "Multi-criteria LLM routing system based on formalized query-model compatibility."
 authors = ["QueryRouter++ Team"]
 license = "MIT"
