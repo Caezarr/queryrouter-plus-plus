@@ -1,0 +1,75 @@
+# QueryRouter++ integration for LibreChat
+#
+# Add this block to your LibreChat librechat.yaml under endpoints.custom.
+# Set QUERYROUTER_API_KEY to any value (used for auth if you add middleware).
+# Set QUERYROUTER_BASE_URL to your QueryRouter++ instance URL.
+#
+# The routing_preference dropdown appears in LibreChat's parameter panel,
+# letting users choose how the router optimizes model selection per conversation.
+
+endpoints:
+  custom:
+    - name: "QueryRouter++"
+      apiKey: "${QUERYROUTER_API_KEY}"
+      baseURL: "${QUERYROUTER_BASE_URL}/v1"
+      models:
+        default:
+          - "queryrouter-auto"
+          - "queryrouter-performance"
+          - "queryrouter-cost"
+          - "queryrouter-cost_performance"
+          - "queryrouter-ecology"
+          - "queryrouter-balanced"
+        fetch: true
+      titleConvo: true
+      titleModel: "queryrouter-auto"
+      modelDisplayLabel: "QueryRouter++"
+      iconURL: "https://raw.githubusercontent.com/queryrouter/queryrouter-plus-plus/main/icon.svg"
+      dropParams:
+        - "user"
+        - "frequency_penalty"
+        - "presence_penalty"
+      customParams:
+        defaultParamsEndpoint: "custom"
+        paramDefinitions:
+          # ---- Routing Preference (main dropdown) ----
+          - key: "routing_preference"
+            type: "enum"
+            default: "balanced"
+            options:
+              - "balanced"
+              - "performance"
+              - "cost"
+              - "cost_performance"
+              - "ecology"
+            enumMappings:
+              balanced: "Balanced"
+              performance: "Performance"
+              cost: "Cost"
+              cost_performance: "Cost/Performance"
+              ecology: "Ecology"
+            component: "dropdown"
+            label: "Routing Preference"
+            description: "How QueryRouter++ optimizes model selection for your queries."
+            columnSpan: 2
+
+          # ---- Standard params (override defaults) ----
+          - key: "temperature"
+            type: "number"
+            default: 0.7
+            range:
+              min: 0
+              max: 2
+              step: 0.01
+            component: "slider"
+            label: "Temperature"
+
+          - key: "max_tokens"
+            type: "number"
+            default: 4096
+            range:
+              min: 1
+              max: 128000
+              step: 1
+            component: "input"
+            label: "Max Tokens"

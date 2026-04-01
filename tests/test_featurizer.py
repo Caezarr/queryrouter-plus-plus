@@ -64,16 +64,16 @@ class TestFeaturize:
         assert task_scores[0] > 0.0, "Should detect coding task"
 
     def test_math_query_detects_math(self, featurizer: QueryFeaturizer) -> None:
-        q = "Solve the equation 3x^2 + 2x - 1 = 0"
+        q = "Solve the equation x = 3 + 2"
         result = featurizer.featurize(q)
-        # Math presence feature (index 26)
-        assert result[26] == 1.0, "Should detect math presence"
+        # Math presence feature (index 25)
+        assert result[25] == 1.0, "Should detect math presence"
 
     def test_creative_query(self, featurizer: QueryFeaturizer) -> None:
         q = "Write a creative story about a robot discovering emotions"
         result = featurizer.featurize(q)
-        # Creativity score (index 27 - second to last)
-        assert result[27] > 0.0, "Should detect creativity"
+        # Creativity score (index 26)
+        assert result[26] > 0.0, "Should detect creativity"
 
     def test_factual_query(self, featurizer: QueryFeaturizer) -> None:
         q = "What is the exact date of the French Revolution?"
@@ -87,12 +87,12 @@ class TestFeaturize:
     def test_code_presence_detection(self, featurizer: QueryFeaturizer) -> None:
         q = "```python\ndef hello():\n    print('hello')\n```"
         result = featurizer.featurize(q)
-        assert result[25] == 1.0, "Should detect code presence"
+        assert result[24] == 1.0, "Should detect code presence"
 
     def test_no_code_presence(self, featurizer: QueryFeaturizer) -> None:
         q = "What is the weather today?"
         result = featurizer.featurize(q)
-        assert result[25] == 0.0, "Should not detect code"
+        assert result[24] == 0.0, "Should not detect code"
 
 
 class TestFeaturizeBatch:

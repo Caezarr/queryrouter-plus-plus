@@ -23,12 +23,17 @@ from queryrouter.api.schemas import (
     RoutingResponse,
     UserPreferences,
 )
-from queryrouter.core.compatibility_scorer import CompatibilityScorer, WeightVector
+from queryrouter.core.compatibility_scorer import (
+    CompatibilityScorer,
+    ModelScore,
+    WeightVector,
+)
 from queryrouter.core.model_registry import ModelRegistry
 from queryrouter.core.preference_engine import PreferenceEngine
 from queryrouter.core.query_featurizer import QueryFeaturizer
 from queryrouter.data.loaders import ModelProfile
 from queryrouter.data.normalizers import FeatureNormalizer
+from queryrouter.data.utils import estimate_query_cost
 
 
 class QueryRouter:
@@ -73,7 +78,7 @@ class QueryRouter:
         self.cascade_threshold = cascade_threshold
 
         if data_dir is None:
-            data_dir = Path(__file__).resolve().parents[2] / "data"
+            data_dir = Path(__file__).resolve().parents[2] / "data_models"
 
         self.registry = ModelRegistry(data_dir)
         self.featurizer = QueryFeaturizer()
@@ -121,12 +126,10 @@ class QueryRouter:
             )
 
         if self.strategy == "cascade":
-            return self._route_cascade(query_features, models, weights, preferences)
+            return self._route_cascade(query_features, models, weights)
         if self.strategy == "embedding":
-            return self._route_embedding(
-                request.query, query_features, models, weights, preferences
-            )
-        return self._route_direct(query_features, models, weights, preferences)
+            return self._route_embedding(query_features, models, weights)
+        return self._route_direct(query_features, models, weights)
 
     def explain(self, request: RoutingRequest) -> str:
         """Generate a human-readable explanation of the routing decision.
@@ -170,7 +173,6 @@ class QueryRouter:
         query_features: np.ndarray,
         models: list[ModelProfile],
         weights: WeightVector,
-        preferences: UserPreferences,
     ) -> RoutingResponse:
         """Direct routing: score all models, return the best.
 
@@ -178,7 +180,6 @@ class QueryRouter:
             query_features: Feature vector phi(q).
             models: Eligible model profiles.
             weights: Resolved weight vector.
-            preferences: Original user preferences.
 
         Returns:
             RoutingResponse.
@@ -191,7 +192,6 @@ class QueryRouter:
         query_features: np.ndarray,
         models: list[ModelProfile],
         weights: WeightVector,
-        preferences: UserPreferences,
     ) -> RoutingResponse:
         """Cascade routing: try cheaper models first, escalate if score is low.
 
@@ -203,7 +203,6 @@ class QueryRouter:
             query_features: Feature vector phi(q).
             models: Eligible model profiles.
             weights: Resolved weight vector.
-            preferences: Original user preferences.
 
         Returns:
             RoutingResponse.
@@ -243,17 +242,15 @@ class QueryRouter:
             scores=api_scores,
             explanation=f"Cascade routing selected {selected_score.model_id} "
             f"(score={selected_score.score:.3f}, threshold={self.cascade_threshold})",
-            estimated_cost_usd=self._estimate_query_cost(best_model),
+            estimated_cost_usd=estimate_query_cost(best_model),
             estimated_latency_ms=best_model.latency_ms or 0,
         )
 
     def _route_embedding(
         self,
-        query_text: str,
         query_features: np.ndarray,
         models: list[ModelProfile],
         weights: WeightVector,
-        preferences: UserPreferences,
     ) -> RoutingResponse:
         """Embedding-based routing using cosine similarity.
 
@@ -263,11 +260,9 @@ class QueryRouter:
         ecology axes remain as in direct routing.
 
         Args:
-            query_text: Raw query string.
             query_features: Feature vector phi(q).
             models: Eligible model profiles.
             weights: Resolved weight vector.
-            preferences: Original user preferences.
 
         Returns:
             RoutingResponse.
@@ -276,25 +271,27 @@ class QueryRouter:
         query_emb = query_features / (np.linalg.norm(query_features) + 1e-10)
 
         scored = []
+        w = weights.as_array()
         for model in models:
-            model_vec = self.normalizer.transform(model)
-            model_emb = model_vec / (np.linalg.norm(model_vec) + 1e-10)
+            # Use precomputed embeddings when available
+            if self._model_embeddings and model.model_id in self._model_embeddings:
+                model_emb = self._model_embeddings[model.model_id]
+            else:
+                model_vec = self.normalizer.transform(model)
+                model_emb = model_vec / (np.linalg.norm(model_vec) + 1e-10)
 
             # Cosine similarity for performance axis
             cos_sim = float(np.dot(query_emb[:len(model_emb)], model_emb))
             cos_sim = max(0.0, min(1.0, (cos_sim + 1.0) / 2.0))  # map [-1,1] to [0,1]
 
             # Other axes from standard scorer
-            cost_s = self.scorer._cost_score(query_features, model)
-            lat_s = self.scorer._latency_score(query_features, model)
-            eco_s = self.scorer._ecology_score(query_features, model)
+            cost_s = self.scorer.cost_score(query_features, model)
+            lat_s = self.scorer.latency_score(query_features, model)
+            eco_s = self.scorer.ecology_score(query_features, model)
 
-            w = weights.as_array()
             total = float(
                 w[0] * cos_sim + w[1] * cost_s + w[2] * lat_s + w[3] * eco_s
             )
-
-            from queryrouter.core.compatibility_scorer import ModelScore
 
             scored.append(ModelScore(
                 model_id=model.model_id,
@@ -324,7 +321,7 @@ class QueryRouter:
 
     def _build_response(
         self,
-        scored: list,
+        scored: list[ModelScore],
         models: list[ModelProfile],
     ) -> RoutingResponse:
         """Build a RoutingResponse from scored results.
@@ -353,7 +350,7 @@ class QueryRouter:
             scores=api_scores,
             explanation=f"{self.strategy.capitalize()} routing selected {best_id} "
             f"with score {scored[0].score:.3f}",
-            estimated_cost_usd=self._estimate_query_cost(best_model) if best_model else 0.0,
+            estimated_cost_usd=estimate_query_cost(best_model) if best_model else 0.0,
             estimated_latency_ms=best_model.latency_ms or 0 if best_model else 0,
         )
 
@@ -375,19 +372,3 @@ class QueryRouter:
             for ms in scored
         ]
 
-    def _estimate_query_cost(self, model: ModelProfile, total_tokens: int = 1000) -> float:
-        """Estimate cost for a typical query.
-
-        Args:
-            model: Model profile.
-            total_tokens: Estimated total tokens.
-
-        Returns:
-            Estimated cost in USD.
-        """
-        input_tokens = int(total_tokens * 0.6)
-        output_tokens = total_tokens - input_tokens
-        return (
-            model.cost_input_per_1m * input_tokens / 1_000_000
-            + model.cost_output_per_1m * output_tokens / 1_000_000
-        )

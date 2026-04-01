@@ -29,7 +29,7 @@ class TestHealthEndpoint:
 
     def test_health_returns_version(self) -> None:
         response = client.get("/health")
-        assert response.json()["version"] == "0.1.0"
+        assert response.json()["version"] == "0.2.0"
 
 
 class TestModelsEndpoint:
@@ -53,7 +53,7 @@ class TestModelsEndpoint:
     def test_known_model_present(self) -> None:
         response = client.get("/models")
         model_ids = [m["model_id"] for m in response.json()["models"]]
-        assert "gpt-4o" in model_ids
+        assert "gpt-4-1" in model_ids
 
 
 class TestRouteEndpoint:
