@@ -242,7 +242,10 @@ def extract_from_mongodb(
         if has_feedback and isinstance(feedback, dict):
             rating = feedback.get("rating")
             if rating is not None:
-                feedback_positive = rating > 0
+                try:
+                    feedback_positive = float(rating) > 0
+                except (ValueError, TypeError):
+                    pass
 
         pairs.append(ConversationPair(
             query=text,
