@@ -55,6 +55,9 @@ models/
 .env.*
 !.env.example
 
+# Conductor workspace
+.context/
+
 # Logs
 *.log
 logs/
