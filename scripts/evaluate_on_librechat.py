@@ -28,7 +28,23 @@ from dataclasses import dataclass, field
 from pathlib import Path
 
 # Add project root to path
-sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+_PROJECT_ROOT = Path(__file__).resolve().parents[1]
+sys.path.insert(0, str(_PROJECT_ROOT))
+
+# Load .env from project root
+_dotenv_path = _PROJECT_ROOT / ".env"
+if _dotenv_path.exists():
+    with open(_dotenv_path) as _f:
+        for _line in _f:
+            _line = _line.strip()
+            if _line and not _line.startswith("#") and "=" in _line:
+                _key, _, _val = _line.partition("=")
+                _key, _val = _key.strip(), _val.strip()
+                if _val.startswith('"') and _val.endswith('"'):
+                    _val = _val[1:-1]
+                if _val.startswith("'") and _val.endswith("'"):
+                    _val = _val[1:-1]
+                os.environ.setdefault(_key, _val)
 
 
 # ---------------------------------------------------------------------------
