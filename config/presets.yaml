@@ -1,0 +1,63 @@
+# QueryRouter++ Presets Configuration
+# Ce fichier définit les 4 modes disponibles pour les utilisateurs LibreChat.
+# Seul l'administrateur doit modifier ce fichier.
+
+presets:
+  eco:
+    name: "Mode Écologique"
+    description: "Privilégie l'empreinte carbone"
+    icon: "🌱"
+    allowed_models:
+      - "gemini-2-5-flash"
+      - "llama-4-maverick"
+      - "qwen-3-235b"
+    weights:
+      w_performance: 0.15
+      w_cost: 0.10
+      w_latency: 0.10
+      w_ecology: 0.65
+    strategy: "direct"
+
+  performance:
+    name: "Mode Performance"
+    description: "La meilleure qualité possible"
+    icon: "⚡"
+    allowed_models:
+      - "claude-opus-4-6"
+      - "gpt-4-1"
+      - "o3"
+      - "gemini-2-5-pro"
+    weights:
+      w_performance: 0.85
+      w_cost: 0.05
+      w_latency: 0.05
+      w_ecology: 0.05
+    strategy: "direct"
+
+  economique:
+    name: "Mode Économique"
+    description: "Le moins cher possible"
+    icon: "💰"
+    allowed_models:
+      - "deepseek-v3"
+      - "qwen-3-235b"
+      - "gemini-2-5-flash"
+    weights:
+      w_performance: 0.10
+      w_cost: 0.80
+      w_latency: 0.05
+      w_ecology: 0.05
+    strategy: "cascade"
+    cascade_threshold: 0.6
+
+  equilibre:
+    name: "Mode Équilibré"
+    description: "Bon rapport qualité/prix"
+    icon: "⚖️"
+    allowed_models: null  # tous les modèles disponibles
+    weights:
+      w_performance: 0.30
+      w_cost: 0.40
+      w_latency: 0.15
+      w_ecology: 0.15
+    strategy: "direct"

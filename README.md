@@ -107,6 +107,62 @@ preferences = UserPreferences(
 
 ---
 
+## LibreChat Integration (4 Modes)
+
+Deploy QueryRouter++ with LibreChat for an ultra-simple user experience — just 4 modes to choose from.
+
+| Mode | Description | Best For |
+|------|-------------|----------|
+| 🌱 **Écologique** | Low carbon footprint | Environmentally conscious users |
+| ⚡ **Performance** | Best quality | Quality-critical tasks |
+| 💰 **Économique** | Lowest cost | Budget-constrained usage |
+| ⚖️ **Équilibré** | Quality/price balance | Daily general use |
+
+**User sees:**
+```
+Modèle: ▼ Mode Équilibré
+
+Utilisateur: Comment fonctionne le routing ?
+
+Assistant: Le routing intelligent...
+
+— Généré par Gemini 2.5 Flash
+```
+
+### Quick Deploy (Docker)
+
+```bash
+# 1. Configure
+
+cp .env.4modes.example .env
+# Edit .env with your API keys
+
+# 2. Launch
+docker-compose -f docker-compose.4modes.yml up -d
+
+# 3. LibreChat available at http://localhost:3080
+```
+
+### Admin Configuration
+
+Edit `config/presets.yaml` to define which models are available in each mode:
+
+```yaml
+presets:
+  eco:
+    allowed_models:
+      - "gemini-2-5-flash"
+      - "llama-4-maverick"
+  performance:
+    allowed_models:
+      - "claude-opus-4-6"
+      - "gpt-4-1"
+```
+
+Full guide: [`docs/LIBRECHAT_4MODES.md`](docs/LIBRECHAT_4MODES.md)
+
+---
+
 ## Server & Demo
 
 ### Start the API server

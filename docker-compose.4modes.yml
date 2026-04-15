@@ -1,0 +1,98 @@
+# QueryRouter++ - Docker Compose pour LibreChat (4 Modes)
+#
+# Stack minimal pour démarrer QueryRouter++ avec LibreChat.
+# Usage: docker-compose -f docker-compose.4modes.yml up -d
+#
+# Configuration:
+# 1. Copiez .env.example vers .env et configurez vos clés API
+# 2. Assurez-vous que config/presets.yaml contient vos modèles
+# 3. Lancez: docker-compose -f docker-compose.4modes.yml up -d
+
+version: "3.8"
+
+services:
+  # QueryRouter++ API
+  queryrouter:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: queryrouter-4modes
+    ports:
+      - "${QUERYROUTER_PORT:-8000}:8000"
+    environment:
+      - QUERYROUTER_DATA_DIR=/app/data_models
+      - QUERYROUTER_DEFAULT_STRATEGY=direct
+      # Provider API Keys (au moins un requis)
+      - OPENAI_API_KEY=${OPENAI_API_KEY:-}
+      - GOOGLE_API_KEY=${GOOGLE_API_KEY:-}
+      - DEEPSEEK_API_KEY=${DEEPSEEK_API_KEY:-}
+      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY:-}
+      - MISTRAL_API_KEY=${MISTRAL_API_KEY:-}
+      - TOGETHER_API_KEY=${TOGETHER_API_KEY:-}
+      - DASHSCOPE_API_KEY=${DASHSCOPE_API_KEY:-}
+    volumes:
+      # Mount presets configuration
+      - ./config/presets.yaml:/app/config/presets.yaml:ro
+      # Mount data models
+      - ./data_models:/app/data_models:ro
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+    networks:
+      - queryrouter-network
+    restart: unless-stopped
+
+  # MongoDB pour LibreChat
+  mongodb:
+    image: mongo:6
+    container_name: queryrouter-mongodb
+    ports:
+      - "27017:27017"
+    environment:
+      - MONGO_INITDB_ROOT_USERNAME=${MONGO_ROOT_USERNAME:-admin}
+      - MONGO_INITDB_ROOT_PASSWORD=${MONGO_ROOT_PASSWORD:-password123}
+    volumes:
+      - mongodb_data:/data/db
+    networks:
+      - queryrouter-network
+    restart: unless-stopped
+
+  # LibreChat (configuration externe requise)
+  # Note: Ce service est optionnel - vous pouvez utiliser votre propre LibreChat
+  librechat:
+    image: ghcr.io/danny-avila/librechat:latest
+    container_name: queryrouter-librechat
+    ports:
+      - "${LIBRECHAT_PORT:-3080}:3080"
+    depends_on:
+      - mongodb
+      - queryrouter
+    environment:
+      # LibreChat MongoDB config
+      - MONGO_URI=mongodb://${MONGO_ROOT_USERNAME:-admin}:${MONGO_ROOT_PASSWORD:-password123}@mongodb:27017/LibreChat?authSource=admin
+      # QueryRouter++ endpoint config
+      - QUERYROUTER_BASE_URL=http://queryrouter:8000
+      - QUERYROUTER_API_KEY=${QUERYROUTER_API_KEY:-sk-queryrouter-local}
+      # LibreChat settings
+      - NODE_ENV=production
+      - HOST=0.0.0.0
+      - PORT=3080
+    volumes:
+      # Mount LibreChat config with 4-modes preset
+      - ./config/librechat-4modes.yaml:/app/librechat.yaml:ro
+    networks:
+      - queryrouter-network
+    restart: unless-stopped
+    profiles:
+      - "with-librechat"  # Only start if explicitly requested
+
+volumes:
+  mongodb_data:
+    driver: local
+
+networks:
+  queryrouter-network:
+    driver: bridge

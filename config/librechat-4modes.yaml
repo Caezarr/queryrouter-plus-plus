@@ -1,0 +1,88 @@
+# QueryRouter++ - Configuration LibreChat Ultra-Simple (4 Modes)
+# 
+# Cette configuration expose uniquement 4 modes à l'utilisateur :
+# - Mode Écologique (🌱)
+# - Mode Performance (⚡)
+# - Mode Économique (💰)
+# - Mode Équilibré (⚖️)
+#
+# L'utilisateur ne voit jamais les modèles disponibles.
+# L'administrateur configure les modèles par mode dans config/presets.yaml
+#
+# Usage:
+# 1. Copiez ce fichier dans votre installation LibreChat (librechat.yaml)
+# 2. Définissez les variables d'environnement QUERYROUTER_BASE_URL et QUERYROUTER_API_KEY
+# 3. Redémarrez LibreChat
+
+version: 1.1.7
+
+endpoints:
+  custom:
+    - name: "QueryRouter++"
+      apiKey: "${QUERYROUTER_API_KEY}"
+      baseURL: "${QUERYROUTER_BASE_URL}/v1"
+      
+      # Les 4 modes virtuels - pas de vrais modèles exposés
+      # L'utilisateur choisit parmi ces 4 modes uniquement
+      models:
+        default:
+          - "mode-ecologique"
+          - "mode-performance"
+          - "mode-economique"
+          - "mode-equilibre"
+        fetch: false  # On utilise la liste statique, pas de fetch dynamique
+      
+      # Affichage dans l'UI
+      modelDisplayLabel: "Mode"
+      titleConvo: true
+      titleModel: "mode-equilibre"
+      
+      # Paramètres simplifiés - on ne passe pas certains params inutiles
+      dropParams:
+        - "user"
+        - "frequency_penalty"
+        - "presence_penalty"
+      
+      # Pas de customParams complexes
+      # Le choix du "modèle" dans LibreChat = choix du mode directement
+      # QueryRouter++ résout le mode en preset et applique les modèles/poids
+
+# Configuration des modèles (facultatif - affichage des icônes)
+# Note: Ces mappings sont utilisés par LibreChat pour l'UI uniquement
+modelSpecs:
+  - name: "mode-ecologique"
+    label: "🌱 Mode Écologique"
+    description: "Privilégie l'empreinte carbone"
+    preset: true
+    
+  - name: "mode-performance"
+    label: "⚡ Mode Performance"
+    description: "La meilleure qualité possible"
+    preset: true
+    
+  - name: "mode-economique"
+    label: "💰 Mode Économique"
+    description: "Le moins cher possible"
+    preset: true
+    
+  - name: "mode-equilibre"
+    label: "⚖️ Mode Équilibré"
+    description: "Bon rapport qualité/prix"
+    preset: true
+    default: true
+
+# Configuration de l'interface
+interface:
+  # Afficher le mode utilisé dans les messages
+  showModelInMessages: true
+  
+  # Icônes personnalisées pour les modes
+  customIcons:
+    - name: "mode-ecologique"
+      icon: "🌱"
+    - name: "mode-performance"
+      icon: "⚡"
+    - name: "mode-economique"
+      icon: "💰"
+    - name: "mode-equilibre"
+      icon: "⚖️"
