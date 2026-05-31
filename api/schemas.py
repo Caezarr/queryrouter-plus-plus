@@ -159,13 +159,40 @@ class UserPreferences(BaseModel):
         return self.weights[key]
 
 
+class ToolContext(BaseModel):
+    """Active tool surfaces for the current request.
+
+    When tools are active, the router shifts weight toward performance
+    because tool-augmented queries typically require stronger models.
+
+    Attributes:
+        has_web_search: Web search tool is available.
+        has_file_search: File/document search is available.
+        has_code_exec: Code interpreter / sandbox is available.
+        has_artifacts: Artifact generation mode is active.
+        has_attached_tools: One or more plugins/tools attached to the conversation.
+        has_mcp: An MCP server is connected.
+        has_agent: Request targets a persisted agent.
+    """
+
+    has_web_search: bool = False
+    has_file_search: bool = False
+    has_code_exec: bool = False
+    has_artifacts: bool = False
+    has_attached_tools: bool = False
+    has_mcp: bool = False
+    has_agent: bool = False
+
+
 class RoutingRequest(BaseModel):
     """Request body for the /route endpoint.
 
     Attributes:
         query: The user's raw query string to route.
         preferences: User preferences controlling model selection.
-        context: Optional metadata (e.g. conversation history, domain hints).
+        tool_context: Optional active tool surfaces. When present, routing
+            shifts toward higher-performance models.
+        context: Optional metadata (e.g. conversation_id, domain hints).
     """
 
     query: str = Field(
@@ -176,6 +203,10 @@ class RoutingRequest(BaseModel):
     preferences: UserPreferences = Field(
         ...,
         description="User preferences for routing optimization.",
+    )
+    tool_context: Optional[ToolContext] = Field(
+        default=None,
+        description="Active tool surfaces. Triggers a performance weight boost when set.",
     )
     context: Optional[dict[str, str]] = Field(
         default=None,

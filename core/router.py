@@ -21,6 +21,7 @@ from queryrouter.api.schemas import (
     ModelScore as APIModelScore,
     RoutingRequest,
     RoutingResponse,
+    ToolContext,
     UserPreferences,
 )
 from queryrouter.core.compatibility_scorer import (
@@ -60,22 +61,39 @@ class QueryRouter:
         'deepseek-v3'
     """
 
+    # Tool boost defaults: how much to shift w_performance when tools are active.
+    # delta_first_class: boost for native tools (web search, code exec, artifacts, plugins).
+    # delta_mcp: additional boost when an MCP server or persisted agent is involved.
+    # cap: maximum total delta to keep the simplex non-degenerate.
+    _DEFAULT_TOOL_BOOST = {
+        "delta_first_class": 0.3,
+        "delta_mcp": 0.15,
+        "cap": 0.4,
+    }
+
     def __init__(
         self,
         strategy: Literal["direct", "cascade", "embedding"] = "direct",
         data_dir: Path | None = None,
         cascade_threshold: float = 0.6,
+        tool_boost: dict[str, float] | None = None,
     ) -> None:
         """Initialize the router with all components.
 
         Args:
             strategy: One of "direct", "cascade", "embedding".
             data_dir: Path to data directory. If None, uses default workspace path.
-            cascade_threshold: Minimum score threshold for cascade strategy
-                before escalating to the next model tier.
+            cascade_threshold: Threshold for cascade query-complexity escalation.
+                Queries with complexity >= threshold are sent to the strongest model.
+            tool_boost: Override for tool-boost config. Keys: delta_first_class,
+                delta_mcp, cap. Missing keys fall back to _DEFAULT_TOOL_BOOST.
         """
         self.strategy = strategy
         self.cascade_threshold = cascade_threshold
+        cfg = self._DEFAULT_TOOL_BOOST.copy()
+        if tool_boost:
+            cfg.update({k: v for k, v in tool_boost.items() if isinstance(v, (int, float))})
+        self._tool_boost_cfg = cfg
 
         if data_dir is None:
             data_dir = Path(__file__).resolve().parents[2] / "data_models"
@@ -106,8 +124,12 @@ class QueryRouter:
             RoutingResponse with recommended model and score breakdown.
         """
         preferences = request.preferences
-        weights = self.preference_engine.resolve(preferences)
+        base_weights = self.preference_engine.resolve(preferences)
         query_features = self.featurizer.featurize(request.query)
+
+        # Tool-aware weight shift: active tools → boost w_performance on Δ³.
+        delta = self._tool_boost_delta(request.tool_context)
+        weights = self._shift_weights_to_performance(base_weights, delta)
 
         # Get eligible models after filtering
         models = self.registry.get_allowed(
@@ -126,7 +148,7 @@ class QueryRouter:
             )
 
         if self.strategy == "cascade":
-            return self._route_cascade(query_features, models, weights)
+            return self._route_cascade(query_features, models, weights, delta)
         if self.strategy == "embedding":
             return self._route_embedding(query_features, models, weights)
         return self._route_direct(query_features, models, weights)
@@ -192,58 +214,160 @@ class QueryRouter:
         query_features: np.ndarray,
         models: list[ModelProfile],
         weights: WeightVector,
+        tool_delta: float = 0.0,
     ) -> RoutingResponse:
-        """Cascade routing: try cheaper models first, escalate if score is low.
+        """Cascade routing based on query complexity, not model score threshold.
 
-        Models are sorted by cost (cheapest first). If the compatibility
-        score exceeds the cascade threshold, that model is selected.
-        Otherwise, escalate to the next more expensive model.
+        Sorts models by cost (cheapest first). Measures query complexity
+        independently of model capabilities — a composite of hard task signals
+        (reasoning/coding/math) and query length. If complexity >= threshold,
+        escalates directly to the strongest (most expensive) model; otherwise
+        uses the cheapest. This avoids the failure mode where a cheap model
+        scores high on benchmark-averaged perf but still struggles with hard
+        instances.
 
         Args:
             query_features: Feature vector phi(q).
             models: Eligible model profiles.
-            weights: Resolved weight vector.
+            weights: Resolved (and tool-shifted) weight vector.
+            tool_delta: Total tool boost delta applied to weights (for explanation).
 
         Returns:
             RoutingResponse.
         """
-        # Sort by total cost ascending
         sorted_models = sorted(
             models,
             key=lambda m: m.cost_input_per_1m + m.cost_output_per_1m,
         )
 
-        all_scored = []
-        selected_score = None
+        complexity = self._query_complexity(query_features)
+        is_complex = complexity >= self.cascade_threshold
 
-        for model in sorted_models:
-            ms = self.scorer.score(query_features, model, weights)
-            all_scored.append(ms)
+        all_scored = self.scorer.score_all(query_features, sorted_models, weights)
 
-            if ms.score >= self.cascade_threshold and selected_score is None:
-                selected_score = ms
+        selected_model_id = (
+            sorted_models[-1].model_id if is_complex else sorted_models[0].model_id
+        )
+        selected_score = next(
+            (s for s in all_scored if s.model_id == selected_model_id),
+            all_scored[-1],
+        )
 
-        # If no model passed threshold, use the last (most expensive)
-        if selected_score is None:
-            selected_score = all_scored[-1]
-
-        # Sort all scores descending for the response
         all_scored.sort(key=lambda x: x.score, reverse=True)
-
-        # Put the selected model first
-        api_scores = self._convert_scores(all_scored)
-        best_model = next(
-            (m for m in sorted_models if m.model_id == selected_score.model_id),
+        selected_model = next(
+            (m for m in sorted_models if m.model_id == selected_model_id),
             sorted_models[-1],
+        )
+
+        decision = "escalated" if is_complex else "cheap"
+        tool_info = f", tool_delta={tool_delta:.2f}" if tool_delta > 0 else ""
+        explanation = (
+            f"Cascade: complexity={complexity:.3f} (threshold={self.cascade_threshold}"
+            f"{tool_info}) → {decision} → {selected_score.model_id}"
         )
 
         return RoutingResponse(
             recommended_model=selected_score.model_id,
-            scores=api_scores,
-            explanation=f"Cascade routing selected {selected_score.model_id} "
-            f"(score={selected_score.score:.3f}, threshold={self.cascade_threshold})",
-            estimated_cost_usd=estimate_query_cost(best_model),
-            estimated_latency_ms=best_model.latency_ms or 0,
+            scores=self._convert_scores(all_scored),
+            explanation=explanation,
+            estimated_cost_usd=estimate_query_cost(selected_model),
+            estimated_latency_ms=selected_model.latency_ms or 0,
+        )
+
+    def _query_complexity(self, query_features: np.ndarray) -> float:
+        """Estimate query difficulty independently of model capabilities.
+
+        Combines hard task signals (reasoning, coding, math) with query
+        length. Hard task scores dominate (0.65 weight); length is a
+        secondary signal (0.35). All inputs are in [0, 1].
+
+        Feature vector layout (QueryFeaturizer, 28 dims):
+            dim 2  — word_count_norm (length proxy)
+            dim 11 — coding   (TASK_TYPES[0])
+            dim 12 — math     (TASK_TYPES[1])
+            dim 15 — reasoning (TASK_TYPES[4])
+
+        Args:
+            query_features: Feature vector phi(q) from QueryFeaturizer.
+
+        Returns:
+            Complexity score in [0, 1].
+        """
+        hard_task_score = max(
+            float(query_features[15]),  # reasoning
+            float(query_features[11]),  # coding
+            float(query_features[12]),  # math
+        )
+        length_score = float(query_features[2])  # word_count_norm
+        return 0.65 * hard_task_score + 0.35 * length_score
+
+    def _tool_boost_delta(self, tool_context: ToolContext | None) -> float:
+        """Compute the performance weight boost from active tool surfaces.
+
+        First-class native tools (web search, file search, code exec,
+        artifacts, attached plugins) share a single delta — stacking them
+        does not compound. MCP servers and persisted agents add a separate,
+        smaller delta on top. Total is capped to keep the simplex valid.
+
+        Args:
+            tool_context: Active tool surfaces, or None.
+
+        Returns:
+            Delta in [0, cap] to add to w_performance.
+        """
+        if tool_context is None:
+            return 0.0
+        cfg = self._tool_boost_cfg
+        delta = 0.0
+        if any([
+            tool_context.has_web_search,
+            tool_context.has_file_search,
+            tool_context.has_code_exec,
+            tool_context.has_artifacts,
+            tool_context.has_attached_tools,
+        ]):
+            delta += cfg["delta_first_class"]
+        if tool_context.has_mcp or tool_context.has_agent:
+            delta += cfg["delta_mcp"]
+        return min(delta, cfg["cap"])
+
+    def _shift_weights_to_performance(
+        self, weights: WeightVector, delta: float
+    ) -> WeightVector:
+        """Move delta of weight budget onto w_performance, keeping Σ w_i = 1.
+
+        Other axes (cost, latency, ecology) are reduced proportionally.
+        delta == 0 returns an identical copy with no behavior change.
+
+        Args:
+            weights: Original weight vector (not mutated).
+            delta: Amount to add to w_performance.
+
+        Returns:
+            New WeightVector on the simplex.
+        """
+        if delta == 0.0:
+            return weights
+
+        w = weights.as_array().copy()  # [perf, cost, latency, ecology]
+        w_perf = w[0]
+        other = w[1:]
+
+        # Cap delta so w_performance doesn't exceed 1
+        actual_delta = min(delta, 1.0 - w_perf)
+        other_sum = float(other.sum())
+
+        if other_sum > 1e-9:
+            other = other * (1.0 - actual_delta / other_sum) if other_sum > actual_delta else other * 0.0
+        w[0] = w_perf + actual_delta
+        w[1:] = other
+
+        # Reconstruct WeightVector from the shifted array
+        return WeightVector(
+            w_performance=float(w[0]),
+            w_cost=float(w[1]),
+            w_latency=float(w[2]),
+            w_ecology=float(w[3]),
         )
 
     def _route_embedding(
