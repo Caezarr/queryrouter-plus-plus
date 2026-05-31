@@ -14,14 +14,17 @@
 QueryRouter++ is an open-source LLM routing framework that selects the optimal model for each query using a **formalized compatibility function** `C(q, m, w)` scored across four axes: **performance**, **cost**, **latency**, and **ecological impact**. User preferences are expressed as weights on a simplex `Δ³`, enabling fine-grained multi-criteria optimization.
 
 ```
-query ──► QueryRouter++ ──► selected model
-             │
-     C(q, m, w) = Σᵢ wᵢ · Aᵢ(q, m)
-             │
-     A₀ = Performance   (benchmark scores)
-     A₁ = Cost          (token pricing)
-     A₂ = Latency       (avg response time)
-     A₃ = Ecology       (CO₂ estimate)
+query + tool_context ──► QueryRouter++ ──► selected model
+                              │
+                      C(q, m, w) = Σᵢ wᵢ · Aᵢ(q, m)
+                              │
+                      A₀ = Performance   (benchmark scores)
+                      A₁ = Cost          (token pricing)
+                      A₂ = Latency       (avg response time)
+                      A₃ = Ecology       (CO₂ estimate)
+
+     w shifted toward performance when active tools detected (web search,
+     code exec, MCP servers…) — stays on the simplex Δ³
 ```
 
 ---
@@ -103,6 +106,46 @@ preferences = UserPreferences(
         "ecology": 0.1,
     },
 )
+```
+
+### Tool-aware routing
+
+When tools are active, the router boosts `w_performance` on the simplex so tool-augmented queries get routed to stronger models. Σ wᵢ = 1 is preserved.
+
+```python
+from queryrouter.api.schemas import RoutingRequest, ToolContext, UserPreferences
+from queryrouter.core.router import QueryRouter
+
+router = QueryRouter()
+
+request = RoutingRequest(
+    query="Search the web for the latest Claude benchmarks and summarize.",
+    preferences=UserPreferences(optimize_for="balanced"),
+    tool_context=ToolContext(
+        has_web_search=True,   # native tool: +0.30 on w_performance
+    ),
+)
+result = router.route(request)
+# w_performance boosted: balanced [0.25,0.25,0.25,0.25] → ~[0.55,0.17,0.17,0.17]
+# → routes to a stronger model than without tool_context
+```
+
+Available tool surfaces:
+
+| Field | Boost | Description |
+|-------|-------|-------------|
+| `has_web_search` | first-class | Web search tool active |
+| `has_file_search` | first-class | Document/file search active |
+| `has_code_exec` | first-class | Code interpreter / sandbox active |
+| `has_artifacts` | first-class | Artifact generation mode active |
+| `has_attached_tools` | first-class | Plugins attached to conversation |
+| `has_mcp` | +0.15 extra | MCP server connected |
+| `has_agent` | +0.15 extra | Persisted agent in use |
+
+First-class tools share a single delta (0.30, stacking doesn't compound). MCP/agent add on top. Total capped at 0.40. Override defaults at init:
+
+```python
+router = QueryRouter(tool_boost={"delta_first_class": 0.2, "delta_mcp": 0.1, "cap": 0.3})
 ```
 
 ---
@@ -306,7 +349,7 @@ With `optimize_for="ecology"`:
 
 We report these honestly because they are contributions too:
 
-- **Cascade ≈ always_cheapest in 2026:** Performance convergence means the cheapest model always clears the cascade threshold. The strategy may prove more useful as model tiers diverge again.
+- **Cascade (original) ≈ always_cheapest in 2026:** Performance convergence meant the cheapest model always cleared the score threshold `C(q,m,w) >= τ`. The rewritten cascade (v0.3.0) uses query complexity instead and no longer has this failure mode — but the simulation results above predate the rewrite.
 - **o3 is never selected in multi-criteria mode:** The 8× reasoning cost multiplier makes o3 uncompetitive for any preference vector with non-zero weight on cost or latency. It is selected only under pure performance weighting (`w_P = 1.0`) on math/reasoning queries — paying 8.3× the pool median for +5.3% performance.
 - **Embedding routing loses accuracy (54%)** without measurable gain in simulation. Its theoretical advantage (out-of-distribution generalization) requires real-world validation.
 
@@ -333,17 +376,20 @@ QUERYROUTER_DEFAULT_STRATEGY=direct
 ### Cascade
 
 ```
-for m in models sorted by cost (ascending):
-    if C(q, m, w) >= τ · max_possible_score:
-        return m
-return argmax_m C(q, m, w)
+complexity(q) = 0.65 × max(reasoning, coding, math) + 0.35 × length
+if complexity(q) >= τ:
+    return argmax_cost(models)   # strongest model
+else:
+    return argmin_cost(models)   # cheapest model
 ```
 
-Tries models from cheapest to most expensive, stopping as soon as one clears a confidence threshold τ. Maximizes cost savings at the expense of accuracy when model tiers are well-separated.
+Routes based on **query complexity** rather than model score thresholds. The complexity score measures instance difficulty — how hard *this specific query* is — independent of model benchmark averages. Hard queries (reasoning, coding, math) go to the strongest model; simple queries go to the cheapest.
+
+This fixes the original threshold approach, where cheap models with high benchmark averages would clear `C(q,m,w) >= τ` even on hard instances they couldn't handle.
 
 ```bash
 QUERYROUTER_DEFAULT_STRATEGY=cascade
-QUERYROUTER_CASCADE_THRESHOLD=0.6   # τ — fraction of max score required to stop
+QUERYROUTER_CASCADE_THRESHOLD=0.6   # τ — complexity threshold for escalation
 ```
 
 ### Embedding

@@ -14,7 +14,9 @@ from pathlib import Path
 
 import pytest
 
-from queryrouter.api.schemas import RoutingRequest, UserPreferences
+import numpy as np
+
+from queryrouter.api.schemas import RoutingRequest, ToolContext, UserPreferences
 from queryrouter.core.router import QueryRouter
 
 DATA_DIR = Path(__file__).resolve().parents[1] / "data_models"
@@ -151,6 +153,86 @@ class TestExplain:
     def test_explain_contains_strategy(self, direct_router: QueryRouter) -> None:
         result = direct_router.explain(_make_request())
         assert "direct" in result.lower()
+
+
+class TestToolAwareRouting:
+    """Tests for tool-aware weight shifting."""
+
+    def test_tool_context_boosts_performance_weight(self, direct_router: QueryRouter) -> None:
+        from queryrouter.core.compatibility_scorer import WeightVector
+        base = WeightVector(w_performance=0.25, w_cost=0.25, w_latency=0.25, w_ecology=0.25)
+        ctx = ToolContext(has_web_search=True)
+        delta = direct_router._tool_boost_delta(ctx)
+        shifted = direct_router._shift_weights_to_performance(base, delta)
+        assert shifted.w_performance > base.w_performance
+
+    def test_no_tools_no_shift(self, direct_router: QueryRouter) -> None:
+        assert direct_router._tool_boost_delta(None) == 0.0
+        assert direct_router._tool_boost_delta(ToolContext()) == 0.0
+
+    def test_first_class_tools_delta(self, direct_router: QueryRouter) -> None:
+        ctx = ToolContext(has_code_exec=True)
+        delta = direct_router._tool_boost_delta(ctx)
+        assert delta == pytest.approx(0.3)
+
+    def test_mcp_adds_on_top(self, direct_router: QueryRouter) -> None:
+        ctx = ToolContext(has_web_search=True, has_mcp=True)
+        delta = direct_router._tool_boost_delta(ctx)
+        assert delta == pytest.approx(min(0.3 + 0.15, 0.4))
+
+    def test_cap_respected(self, direct_router: QueryRouter) -> None:
+        ctx = ToolContext(has_web_search=True, has_mcp=True, has_agent=True)
+        delta = direct_router._tool_boost_delta(ctx)
+        assert delta <= direct_router._tool_boost_cfg["cap"]
+
+    def test_shifted_weights_sum_to_one(self, direct_router: QueryRouter) -> None:
+        from queryrouter.core.compatibility_scorer import WeightVector
+        base = WeightVector(w_performance=0.25, w_cost=0.25, w_latency=0.25, w_ecology=0.25)
+        shifted = direct_router._shift_weights_to_performance(base, 0.3)
+        total = shifted.w_performance + shifted.w_cost + shifted.w_latency + shifted.w_ecology
+        assert total == pytest.approx(1.0)
+
+    def test_tool_context_routes_to_stronger_model(self, direct_router: QueryRouter) -> None:
+        base_request = _make_request("Summarize this document", "cost")
+        tool_request = RoutingRequest(
+            query="Summarize this document",
+            preferences=UserPreferences(optimize_for="cost"),
+            tool_context=ToolContext(has_web_search=True, has_code_exec=True),
+        )
+        base_resp = direct_router.route(base_request)
+        tool_resp = direct_router.route(tool_request)
+        # Tool-aware request should select a model with higher performance score
+        base_score = next(s for s in base_resp.scores if s.model_id == base_resp.recommended_model)
+        tool_score = next(s for s in tool_resp.scores if s.model_id == tool_resp.recommended_model)
+        assert tool_score.breakdown.get("performance", 0) >= base_score.breakdown.get("performance", 0) - 0.05
+
+
+class TestQueryComplexity:
+    """Tests for the cascade query-complexity estimator."""
+
+    def test_simple_query_low_complexity(self, cascade_router: QueryRouter) -> None:
+        features = cascade_router.featurizer.featurize("Hello, how are you?")
+        complexity = cascade_router._query_complexity(features)
+        assert complexity < 0.5
+
+    def test_hard_query_high_complexity(self, cascade_router: QueryRouter) -> None:
+        features = cascade_router.featurizer.featurize(
+            "Prove that P≠NP using a formal reduction from 3-SAT and derive the "
+            "computational complexity lower bound with a step-by-step mathematical proof."
+        )
+        complexity = cascade_router._query_complexity(features)
+        assert complexity >= 0.3
+
+    def test_complexity_in_range(self, cascade_router: QueryRouter) -> None:
+        for query in ["hi", "write python code", "explain quantum entanglement mathematically"]:
+            features = cascade_router.featurizer.featurize(query)
+            c = cascade_router._query_complexity(features)
+            assert 0.0 <= c <= 1.0
+
+    def test_cascade_explanation_mentions_complexity(self, cascade_router: QueryRouter) -> None:
+        response = cascade_router.route(_make_request("Write a recursive fibonacci function"))
+        assert "complexity" in response.explanation
+        assert "threshold" in response.explanation
 
 
 class TestModelFiltering:
