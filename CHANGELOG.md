@@ -2,6 +2,35 @@
 
 All notable changes to QueryRouter++ are documented here.
 
+## [0.3.0] — 2026-05-31
+
+### Added
+- **Tool-aware routing**: `ToolContext` schema with 7 boolean fields (`has_web_search`,
+  `has_file_search`, `has_code_exec`, `has_artifacts`, `has_attached_tools`, `has_mcp`,
+  `has_agent`). When active tools are present, `w_performance` is boosted on the simplex
+  Δ³ so tool-augmented queries are routed toward stronger models.
+- `QueryRouter._tool_boost_delta()` — computes the performance weight boost based on
+  active tool surfaces (first-class tools: +0.30; MCP/agent: +0.15; cap: 0.40).
+- `QueryRouter._shift_weights_to_performance()` — shifts `delta` onto `w_performance`
+  while reducing other axes proportionally, preserving Σ wᵢ = 1.
+- `QueryRouter(tool_boost=...)` constructor argument to override default boost config.
+
+### Changed
+- **Cascade strategy refactored**: no longer compares the composite score C(q,m,w)
+  against the threshold. Instead uses `_query_complexity()` — a measure of instance
+  difficulty independent of model benchmark scores — to decide escalation.
+  `complexity >= threshold` → strongest model; otherwise cheapest.
+- `QueryRouter._query_complexity()` — weighted combination of hard task signals
+  (reasoning, coding, math — dims 15/11/12 of phi(q)) and query length (dim 2).
+  Weights: 0.65 × hard task + 0.35 × length.
+- `RoutingRequest.context` type narrowed; new `tool_context: Optional[ToolContext]`
+  field added alongside it.
+
+### Fixed
+- Cascade strategy failure mode: cheap models with high benchmark averages were
+  previously selected for hard instances when they happened to clear the score
+  threshold. Complexity-based escalation is instance-aware, not benchmark-averaged.
+
 ## [0.2.0] — 2026-03-25
 
 ### Changed
