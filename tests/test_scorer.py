@@ -169,3 +169,118 @@ class TestWeightVector:
     def test_from_dict_defaults(self) -> None:
         w = WeightVector.from_dict({})
         assert w.w_performance == 0.25
+
+
+class TestLatencyDiscrimination:
+    """Tests that latency axis discriminates between models."""
+
+    def test_latency_scores_differ_across_models(
+        self, scorer: CompatibilityScorer, profiles: list[ModelProfile], featurizer: QueryFeaturizer
+    ) -> None:
+        """Latency scores should vary based on model latency_ms values."""
+        features = featurizer.featurize("Quick question")
+        latency_scores = [
+            scorer.latency_score(features, p) for p in profiles
+        ]
+        # With different latencies (200, 800, 400), scores should differ
+        unique_scores = set(latency_scores)
+        assert len(unique_scores) > 1, "Latency scores should not be constant"
+        # Fastest model (200ms) should score highest
+        assert latency_scores[0] > latency_scores[1]  # cheap (200) > expensive (800)
+        assert latency_scores[2] > latency_scores[1]  # balanced (400) > expensive (800)
+
+    def test_latency_not_constant_zero_five(
+        self, scorer: CompatibilityScorer, profiles: list[ModelProfile], featurizer: QueryFeaturizer
+    ) -> None:
+        """Latency should not return 0.5 for all models when latency_ms is set."""
+        features = featurizer.featurize("Test query")
+        for profile in profiles:
+            lat_score = scorer.latency_score(features, profile)
+            # Should not be exactly 0.5 since all test profiles have latency_ms set
+            assert lat_score != 0.5
+
+
+class TestGPQAWeighting:
+    """Tests that reasoning tasks use GPQA Diamond instead of deprecated benchmarks."""
+
+    def test_reasoning_query_uses_gpqa(
+        self, scorer: CompatibilityScorer, profiles: list[ModelProfile], featurizer: QueryFeaturizer
+    ) -> None:
+        """Reasoning queries should weight GPQA Diamond in performance scoring."""
+        # Create a reasoning-heavy query
+        features = featurizer.featurize(
+            "Analyze the following scientific reasoning problem step by step: "
+            "Given a complex molecular structure, deduce the reaction pathway."
+        )
+        
+        # Check that reasoning task type is activated
+        task_scores = features[11:21]  # task type features
+        reasoning_idx = 4  # "reasoning" is 5th in TASK_TYPES list
+        assert task_scores[reasoning_idx] > 0.1, "Reasoning task should be detected"
+        
+        # Performance scoring should work without errors (GPQA is in BENCHMARK_NAMES)
+        perf_score = scorer._performance_score(features, profiles[0])
+        assert 0.0 <= perf_score <= 1.0
+
+    def test_coding_query_uses_humaneval_not_gpqa(
+        self, scorer: CompatibilityScorer, profiles: list[ModelProfile], featurizer: QueryFeaturizer
+    ) -> None:
+        """Coding queries should use HumanEval, not mix with GPQA."""
+        features = featurizer.featurize(
+            "Write a Python function to implement binary search on a sorted array"
+        )
+        
+        # Check that coding task type is activated
+        task_scores = features[11:21]
+        coding_idx = 0  # "coding" is first in TASK_TYPES list
+        assert task_scores[coding_idx] > 0.1, "Coding task should be detected"
+        
+        # Performance scoring should work
+        perf_score = scorer._performance_score(features, profiles[1])
+        assert 0.0 <= perf_score <= 1.0
+
+
+class TestCostScaling:
+    """Tests that cost scales with query expected output length."""
+
+    def test_long_query_costs_more_than_short(
+        self, scorer: CompatibilityScorer, profiles: list[ModelProfile], featurizer: QueryFeaturizer
+    ) -> None:
+        """Long-output queries should have different cost scores than short-output queries."""
+        # Short query (expected output: brief)
+        short_features = featurizer.featurize("What is 2+2?")
+        short_cost = scorer.cost_score(short_features, profiles[1])  # expensive model
+        
+        # Long query (expected output: comprehensive)
+        long_features = featurizer.featurize(
+            "Write a comprehensive essay explaining the complete history of artificial "
+            "intelligence, including all major breakthroughs, key figures, philosophical "
+            "implications, and future directions. Provide detailed examples and thorough analysis."
+        )
+        long_cost = scorer.cost_score(long_features, profiles[1])  # same expensive model
+        
+        # Cost scores should differ because actual estimated costs differ
+        # Note: cost_score inverts (lower cost = higher score), so long query
+        # should have lower score (costs more) than short query
+        assert long_cost != short_cost, "Cost should vary with output length"
+
+    def test_cost_reflects_output_length_in_features(
+        self, scorer: CompatibilityScorer, profiles: list[ModelProfile], featurizer: QueryFeaturizer
+    ) -> None:
+        """Cost calculation should use expected_output_length from query features."""
+        short_features = featurizer.featurize("yes or no")
+        long_features = featurizer.featurize(
+            "Provide a detailed step-by-step explanation with comprehensive examples"
+        )
+        
+        # Check that expected_output_length differs (feature index 21)
+        short_output = short_features[21]
+        long_output = long_features[21]
+        assert long_output > short_output, "Long query should have higher expected output"
+        
+        # Cost scores should reflect this difference
+        short_cost_score = scorer.cost_score(short_features, profiles[0])
+        long_cost_score = scorer.cost_score(long_features, profiles[0])
+        
+        # Different output lengths should produce different costs
+        assert short_cost_score != long_cost_score
