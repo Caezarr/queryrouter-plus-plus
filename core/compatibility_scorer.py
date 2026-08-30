@@ -86,16 +86,16 @@ TASK_BENCHMARK_MAP: dict[str, list[str]] = {
     "coding": ["humaneval"],
     "math": ["gsm8k", "math"],
     "creative": ["mmlu"],  # proxy: general knowledge
-    "factual": ["mmlu", "hellaswag", "arc"],
-    "reasoning": ["mmlu", "arc", "hellaswag"],
+    "factual": ["mmlu"],
+    "reasoning": ["gpqa_diamond", "mmlu"],
     "summarization": ["mmlu"],
     "translation": ["mmlu"],
-    "classification": ["mmlu", "hellaswag"],
+    "classification": ["mmlu"],
     "conversation": ["mmlu"],
     "debugging": ["humaneval"],
 }
 
-BENCHMARK_NAMES = ["mmlu", "humaneval", "gsm8k", "math", "hellaswag", "arc"]
+BENCHMARK_NAMES = ["mmlu", "humaneval", "gsm8k", "math", "gpqa_diamond"]
 
 
 class CompatibilityScorer:
