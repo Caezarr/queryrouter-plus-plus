@@ -1,15 +1,15 @@
 ---
 description: Documentation of data sources, collection methodology, confidence levels, and known limitations for the QueryRouter++ empirical dataset
 agent: data-collector
-date: 2026-03-24
-version: 2.0
+date: 2026-08-30
+version: 2.1
 ---
 
 # Data Collection — QueryRouter++ Empirical Dataset
 
 ## Overview
 
-This directory contains empirical data collected on **2026-03-24** for the QueryRouter++ routing system. The data covers 12 major LLMs across three dimensions: benchmark performance, API pricing, and ecological impact, plus a structured query taxonomy. This is version 2.0, updated from the original 2025-era model pool to reflect the 2026 landscape.
+This directory contains empirical data collected on **2026-08-30** for the QueryRouter++ routing system. The data covers 12 major LLMs across three dimensions: benchmark performance, API pricing, and ecological impact, plus a structured query taxonomy. This is version 2.0, updated from the original 2025-era model pool to reflect the 2026 landscape.
 
 ## Models Covered
 
@@ -146,4 +146,10 @@ Structured taxonomy of 10 query categories (unchanged from v1.0).
 
 ## Reproducibility
 
-All data in this directory was collected on 2026-03-24 via web search and direct URL fetching. The sources listed above can be re-queried to verify or update values. A re-collection is recommended every 3 months given the pace of change in LLM pricing and capabilities.
+All data in this directory was collected on 2026-08-30 via web search and direct URL fetching from ArtificialAnalysis.ai, OpenRouter, and official provider sources. The sources listed above can be re-queried to verify or update values. A re-collection is recommended every 3 months given the pace of change in LLM pricing and capabilities.
+
+## Changelog Summary (2026-03-24 → 2026-08-30)
+
+- **Latency data**: Filled avg_latency_ms for all 12 models from ArtificialAnalysis.ai (median TTFT in milliseconds). Range: 450ms (Gemini 2.5 Flash) to 23,700ms (Gemini 2.5 Pro reasoning).
+- **GPQA Diamond**: Added gpqa_diamond_score column to replace deprecated HellaSwag and ARC benchmarks. GPQA provides better discrimination for reasoning capabilities (scores range 53.2% to 91.3%).
+- **Benchmark sources**: Extended source URLs to include ArtificialAnalysis.ai and OpenRouter benchmark leaderboards for transparency.
