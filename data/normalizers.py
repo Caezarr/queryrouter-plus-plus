@@ -36,8 +36,7 @@ class BenchmarkNormalizer:
         "humaneval",
         "gsm8k",
         "math",
-        "hellaswag",
-        "arc",
+        "gpqa_diamond",
     ]
 
     def __init__(self) -> None:

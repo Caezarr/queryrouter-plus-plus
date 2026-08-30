@@ -114,8 +114,7 @@ class ModelRegistry:
         "humaneval_score",
         "gsm8k_score",
         "math_score",
-        "hellaswag_score",
-        "arc_score",
+        "gpqa_diamond_score",
     ]
 
     def __init__(self, data_dir: Path) -> None:
