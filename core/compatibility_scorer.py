@@ -242,6 +242,9 @@ class CompatibilityScorer:
     ) -> float:
         """Compute the cost axis score K(q, m).
 
+        Uses query's expected output length to estimate actual query cost
+        rather than a fixed 1000-token assumption.
+
         Args:
             query_features: Feature vector phi(q).
             model_profile: Model profile.
@@ -249,7 +252,34 @@ class CompatibilityScorer:
         Returns:
             Cost score in [0, 1] where 1.0 = cheapest.
         """
-        return self.normalizer.cost_normalizer.transform(model_profile)
+        # Extract expected_output_length from query features (index 21)
+        # Value is normalized 0-1: 0=short, 0.5=medium, 1=long
+        output_length_norm = query_features[21]
+        
+        # Map to token estimates: short=50, medium=200, long=500
+        estimated_output_tokens = 50 + output_length_norm * 450
+        
+        # Assume fixed input size of 150 tokens (average prompt)
+        estimated_input_tokens = 150
+        total_tokens = estimated_input_tokens + estimated_output_tokens
+        
+        # Calculate query-specific cost
+        query_cost = (
+            model_profile.cost_input_per_1m * estimated_input_tokens / 1_000_000
+            + model_profile.cost_output_per_1m * estimated_output_tokens / 1_000_000
+        )
+        
+        # Normalize against the min/max costs at this token count
+        # Use normalizer's fitted min/max as baseline (they're per-1M-token sums)
+        # Scale to this query's token count
+        denom = self.normalizer.cost_normalizer.max_cost - self.normalizer.cost_normalizer.min_cost
+        if denom == 0:
+            return 1.0
+        
+        # Normalize the query cost as if it were per-1M tokens for comparison
+        effective_cost_per_1m = query_cost * 1_000_000 / total_tokens
+        normalized = (effective_cost_per_1m - self.normalizer.cost_normalizer.min_cost) / denom
+        return float(np.clip(1.0 - normalized, 0.0, 1.0))
 
     def _latency_score(
         self, query_features: np.ndarray, model_profile: ModelProfile
