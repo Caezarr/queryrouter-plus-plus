@@ -1,11 +1,49 @@
 ---
-description: Changelog documenting changes between v1.0 (2025 model pool) and v2.0 (2026 model pool)
+description: Changelog documenting data collection updates for the QueryRouter++ empirical dataset
 agent: data-collector
-date: 2026-03-24
-version: 1.0
+date: 2026-08-30
+version: 2.1
 ---
 
-# Data CHANGELOG — v1.0 (2026-03-23) to v2.0 (2026-03-24)
+# Data CHANGELOG
+
+## v2.0 (2026-03-24) to v2.1 (2026-08-30)
+
+### Summary
+
+Data refresh to address three critical gaps in the routing axes: missing latency data, deprecated benchmark columns, and fixed cost assumptions. This update ensures all four scoring axes (performance, cost, latency, ecology) properly discriminate between models.
+
+### Changes
+
+#### Latency Data Added
+- **File**: `models_cost_matrix.csv`
+- **Change**: Filled `avg_latency_ms` column for all 12 models with median Time to First Token (TTFT) data from ArtificialAnalysis.ai
+- **Range**: 450ms (Gemini 2.5 Flash) to 23,700ms (Gemini 2.5 Pro reasoning model)
+- **Impact**: Latency scoring axis now varies across models instead of returning constant 0.5
+- **Sources**: Extended to include ArtificialAnalysis.ai provider benchmarks
+
+#### GPQA Diamond Benchmark Added
+- **File**: `models_benchmark_matrix.csv`
+- **Change**: Added `gpqa_diamond_score` column; removed `hellaswag_score` and `arc_score` columns
+- **Rationale**: GPQA Diamond (graduate-level science Q&A) provides better discrimination for reasoning tasks on 2026 models. HellaSwag and ARC are saturated/deprecated.
+- **Score Range**: 53.2% (DeepSeek V3) to 91.3% (Claude Opus 4.6)
+- **Sources**: ArtificialAnalysis.ai, OpenRouter benchmarks, official papers
+- **Code Impact**: Updated `TASK_BENCHMARK_MAP` and `BENCHMARK_NAMES` in `core/compatibility_scorer.py` to weight reasoning tasks by GPQA instead of deprecated benchmarks
+
+#### Collection Date Updated
+- All CSV headers and README updated to reflect 2026-08-30 collection date
+- Added changelog summary to README for transparency
+
+### Validation
+
+Added test coverage in `tests/test_scorer.py`:
+- `TestLatencyDiscrimination`: Verifies latency scores vary across models
+- `TestGPQAWeighting`: Confirms reasoning tasks use GPQA Diamond
+- `TestCostScaling`: Proves cost scales with query output length (implemented in separate commit)
+
+---
+
+## v1.0 (2026-03-23) to v2.0 (2026-03-24)
 
 ## Summary
 
