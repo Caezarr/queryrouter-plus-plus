@@ -2,6 +2,28 @@
 
 All notable changes to QueryRouter++ are documented here.
 
+## [Unreleased]
+
+### Added
+- **GPQA benchmark column**: Added `gpqa` (Graduate-Level Google-Proof Q&A) benchmark to model
+  profiles, replacing HellaSWAG and ARC-C for more granular reasoning capability assessment.
+- **Data provenance tracking**: `data_models/CHANGELOG.md` now documents benchmark data collection
+  dates and sources for the 12-model pool.
+
+### Changed
+- **Cost scaling by expected output length**: `CompatibilityScorer` now scales cost by
+  `query.expected_output_length` rather than a fixed 1000-token constant. Short-output queries
+  (translations, classifications) now show accurate per-query cost estimates.
+- **Latency data filled**: All 12 models now have `avg_latency_ms` values sourced from cited
+  benchmarks (previously 4 models were missing latency data).
+- **Benchmark columns updated**: Dropped `hellaswag` and `arc_challenge` from
+  `BENCHMARK_COLUMNS` and `TASK_BENCHMARK_MAP` in favor of `gpqa` for focused reasoning
+  evaluation.
+
+### Fixed
+- Test suite expanded: added assertions for nonzero latency scores, GPQA-weighted task routing,
+  and cost scaling behavior for long vs short queries.
+
 ## [0.3.0] — 2026-05-31
 
 ### Added
