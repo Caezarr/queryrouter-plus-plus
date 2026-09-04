@@ -5,6 +5,10 @@ All notable changes to QueryRouter++ are documented here.
 ## [Unreleased]
 
 ### Added
+- **CI/CD pipeline**: GitHub Actions workflow running `pytest` on Python 3.11 with Poetry dependency caching.
+- **Dependabot automation**: Weekly security updates for pip dependencies and GitHub Actions.
+- **Security policy**: `SECURITY.md` with vulnerability reporting contact (gabriel.rance@ensam.eu) and response timeline.
+- **CI status badge**: README now displays live CI workflow status from GitHub Actions.
 - **GPQA benchmark column**: Added `gpqa` (Graduate-Level Google-Proof Q&A) benchmark to model
   profiles, replacing HellaSWAG and ARC-C for more granular reasoning capability assessment.
 - **Data provenance tracking**: `data_models/CHANGELOG.md` now documents benchmark data collection
