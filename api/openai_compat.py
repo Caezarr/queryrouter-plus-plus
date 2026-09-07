@@ -156,6 +156,16 @@ def _resolve_mode_and_preference(request: ChatCompletionRequest) -> tuple[Preset
     return preset, "balanced"
 
 
+def _resolve_preference(request: ChatCompletionRequest) -> str:
+    """Resolve routing preference from request.
+    
+    Wrapper around _resolve_mode_and_preference that returns only the preference string.
+    Used by tests and legacy code.
+    """
+    _, preference = _resolve_mode_and_preference(request)
+    return preference
+
+
 def _build_upstream_body(
     request: ChatCompletionRequest,
     model_id: str,

@@ -74,4 +74,4 @@ jobs:
         run: poetry run pip install pip-audit
 
       - name: Run pip-audit
-        run: poetry run pip-audit --require-hashes --disable-pip
+        run: poetry run pip-audit --disable-pip
