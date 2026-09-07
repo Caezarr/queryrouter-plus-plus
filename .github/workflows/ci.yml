@@ -75,8 +75,9 @@ jobs:
 
       - name: Run pip-audit
         run: |
-          # Ignore starlette vulnerabilities that require v1.x (fastapi ^0.115 pins starlette <0.47)
-          # These will be resolved when fastapi adds starlette 1.x support
+          # Ignore vulnerabilities blocked by upstream dependency constraints:
+          # - starlette: requires v1.x but fastapi ^0.115 pins starlette <0.47
+          # - transformers: requires v5.x but sentence-transformers ^3.0 pins transformers <5.0
           poetry run pip-audit \
             --ignore-vuln PYSEC-2026-161 \
             --ignore-vuln PYSEC-2026-248 \
@@ -84,4 +85,9 @@ jobs:
             --ignore-vuln PYSEC-2026-1942 \
             --ignore-vuln PYSEC-2026-1941 \
             --ignore-vuln PYSEC-2026-2281 \
-            --ignore-vuln PYSEC-2026-2280
+            --ignore-vuln PYSEC-2026-2280 \
+            --ignore-vuln PYSEC-2025-217 \
+            --ignore-vuln PYSEC-2026-2290 \
+            --ignore-vuln PYSEC-2026-2288 \
+            --ignore-vuln PYSEC-2026-2289 \
+            --ignore-vuln CVE-2026-9856
