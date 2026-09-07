@@ -281,9 +281,12 @@ class TestCostScaling:
         long_output = long_features[21]
         assert long_output > short_output, "Long query should have higher expected output"
         
-        # Cost scores should reflect this difference
-        short_cost_score = scorer.cost_score(short_features, profiles[0])
-        long_cost_score = scorer.cost_score(long_features, profiles[0])
+        # Test with balanced model (profiles[2]) where output length variations have more impact
+        # (not cheapest or most expensive, so we see the relative cost differences)
+        short_cost_score = scorer.cost_score(short_features, profiles[2])
+        long_cost_score = scorer.cost_score(long_features, profiles[2])
         
-        # Different output lengths should produce different costs
-        assert short_cost_score != long_cost_score
+        # Different output lengths should produce different cost scores
+        # Long output costs more, so score should be lower (cost score is inverted)
+        assert short_cost_score != long_cost_score, "Output length should affect cost score"
+        assert short_cost_score > long_cost_score, "Shorter output should have better (higher) cost score"
