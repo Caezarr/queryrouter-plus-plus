@@ -23,7 +23,7 @@ def _profiles() -> list[ModelProfile]:
             model_id="cheap",
             name="Cheap",
             provider="T",
-            benchmarks={"mmlu": 0.7, "humaneval": 0.5, "gsm8k": 0.6, "math": 0.4, "hellaswag": 0.7, "arc": 0.6},
+            benchmarks={"mmlu": 0.7, "humaneval": 0.5, "gsm8k": 0.6, "math": 0.4, "gpqa_diamond": 0.55},
             cost_input_per_1m=0.1,
             cost_output_per_1m=0.3,
             latency_ms=200,
@@ -33,7 +33,7 @@ def _profiles() -> list[ModelProfile]:
             model_id="expensive",
             name="Expensive",
             provider="T",
-            benchmarks={"mmlu": 0.95, "humaneval": 0.95, "gsm8k": 0.98, "math": 0.9, "hellaswag": 0.96, "arc": 0.95},
+            benchmarks={"mmlu": 0.95, "humaneval": 0.95, "gsm8k": 0.98, "math": 0.9, "gpqa_diamond": 0.92},
             cost_input_per_1m=10.0,
             cost_output_per_1m=30.0,
             latency_ms=800,
@@ -47,7 +47,7 @@ class TestBenchmarkNormalizer:
         bn = BenchmarkNormalizer()
         bn.fit(_profiles())
         result = bn.transform(_profiles()[0])
-        assert result.shape == (6,)
+        assert result.shape == (5,)
 
     def test_transform_range(self) -> None:
         bn = BenchmarkNormalizer()
@@ -83,7 +83,7 @@ class TestBenchmarkNormalizer:
         bn = BenchmarkNormalizer()
         bn.fit(profiles)
         result = bn.transform(sparse)
-        assert result.shape == (6,)
+        assert result.shape == (5,)
         assert np.all(np.isfinite(result))
 
     def test_unfitted_raises(self) -> None:

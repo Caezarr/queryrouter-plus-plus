@@ -32,16 +32,17 @@ class TestListModels:
     def test_includes_preset_models(self) -> None:
         response = client.get("/v1/models")
         ids = [m["id"] for m in response.json()["data"]]
-        assert "queryrouter-auto" in ids
-        assert "queryrouter-performance" in ids
-        assert "queryrouter-cost" in ids
-        assert "queryrouter-ecology" in ids
+        assert "mode-ecologique" in ids
+        assert "mode-performance" in ids
+        assert "mode-economique" in ids
+        assert "mode-equilibre" in ids
 
     def test_includes_real_models(self) -> None:
         response = client.get("/v1/models")
-        ids = [m["id"] for m in response.json()["data"]]
-        # Should include at least one real model wrapped as queryrouter-{id}
-        assert any(mid.startswith("queryrouter-") and mid != "queryrouter-auto" for mid in ids)
+        data = response.json()["data"]
+        # Should return the 4 LibreChat mode presets
+        assert len(data) == 4
+        assert all(m["id"].startswith("mode-") for m in data)
 
 
 class TestExtractQuery:

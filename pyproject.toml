@@ -28,10 +28,10 @@ python-dotenv = "^1.0.0"
 rich = "^13.9.0"
 
 [tool.poetry.group.dev.dependencies]
-pytest = "^8.3.0"
+pytest = "^9.0.3"
 pytest-cov = "^6.0.0"
 ruff = "^0.8.0"
-black = "^24.10.0"
+black = "^26.3.1"
 mypy = "^1.13.0"
 
 [tool.poetry.scripts]

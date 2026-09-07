@@ -39,3 +39,55 @@ jobs:
 
       - name: Run tests
         run: poetry run pytest
+
+  security:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install Poetry
+        uses: snok/install-poetry@v1
+        with:
+          virtualenvs-create: true
+          virtualenvs-in-project: true
+
+      - name: Load cached venv
+        id: cached-poetry-dependencies
+        uses: actions/cache@v4
+        with:
+          path: .venv
+          key: venv-${{ runner.os }}-${{ hashFiles('**/poetry.lock') }}
+
+      - name: Install dependencies
+        if: steps.cached-poetry-dependencies.outputs.cache-hit != 'true'
+        run: poetry install --no-interaction --no-root
+
+      - name: Install project
+        run: poetry install --no-interaction
+
+      - name: Install pip-audit
+        run: poetry run pip install pip-audit
+
+      - name: Run pip-audit
+        run: |
+          # Ignore vulnerabilities blocked by upstream dependency constraints:
+          # - starlette: requires v1.x but fastapi ^0.115 pins starlette <0.47
+          # - transformers: requires v5.x but sentence-transformers ^3.0 pins transformers <5.0
+          poetry run pip-audit \
+            --ignore-vuln PYSEC-2026-161 \
+            --ignore-vuln PYSEC-2026-248 \
+            --ignore-vuln PYSEC-2026-249 \
+            --ignore-vuln PYSEC-2026-1942 \
+            --ignore-vuln PYSEC-2026-1941 \
+            --ignore-vuln PYSEC-2026-2281 \
+            --ignore-vuln PYSEC-2026-2280 \
+            --ignore-vuln PYSEC-2025-217 \
+            --ignore-vuln PYSEC-2026-2290 \
+            --ignore-vuln PYSEC-2026-2288 \
+            --ignore-vuln PYSEC-2026-2289 \
+            --ignore-vuln CVE-2026-9856

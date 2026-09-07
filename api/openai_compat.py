@@ -116,11 +116,32 @@ def _resolve_mode_and_preference(request: ChatCompletionRequest) -> tuple[Preset
     Returns:
         Tuple of (PresetConfig, preference_string)
     """
+    # 1. Explicit routing_preference field (highest priority for backward compatibility)
+    if request.routing_preference:
+        pref = request.routing_preference
+        preset = resolve_mode(pref)
+        return preset, pref
+
+    # 2. From extra body / modelKwargs (LibreChat sends custom params here)
+    extra = request.model_extra or {}
+    if "routing_preference" in extra:
+        pref = str(extra["routing_preference"])
+        preset = resolve_mode(pref)
+        return preset, pref
+    model_kwargs = extra.get("modelKwargs", {})
+    if isinstance(model_kwargs, dict) and "routing_preference" in model_kwargs:
+        pref = str(model_kwargs["routing_preference"])
+        preset = resolve_mode(pref)
+        return preset, pref
+    
+    # 3. Parse model name for LibreChat 4-modes preset names or legacy patterns
     model = request.model.lower()
     
-    # 1. Check for LibreChat 4-modes preset names first
-    # These take precedence over legacy preferences
-    if "eco" in model or "ecologique" in model:
+    # Check for exact/specific patterns first to avoid false matches
+    if "cost_performance" in model or "cost-performance" in model:
+        preset = resolve_mode("economique")
+        return preset, "cost_performance"
+    if "ecology" in model or "ecologique" in model or (model.startswith("queryrouter-") and "eco" in model):
         preset = resolve_mode("eco")
         return preset, "ecology"
     if "performance" in model or "perf" in model:
@@ -132,28 +153,20 @@ def _resolve_mode_and_preference(request: ChatCompletionRequest) -> tuple[Preset
     if "equilibre" in model or "balanced" in model or "auto" in model:
         preset = resolve_mode("equilibre")
         return preset, "balanced"
-    
-    # 2. Explicit routing_preference field (legacy support)
-    if request.routing_preference:
-        pref = request.routing_preference
-        preset = resolve_mode(pref)
-        return preset, pref
-
-    # 3. From extra body / modelKwargs (LibreChat sends custom params here)
-    extra = request.model_extra or {}
-    if "routing_preference" in extra:
-        pref = str(extra["routing_preference"])
-        preset = resolve_mode(pref)
-        return preset, pref
-    model_kwargs = extra.get("modelKwargs", {})
-    if isinstance(model_kwargs, dict) and "routing_preference" in model_kwargs:
-        pref = str(model_kwargs["routing_preference"])
-        preset = resolve_mode(pref)
-        return preset, pref
 
     # Default to equilibre/balanced
     preset = resolve_mode("equilibre")
     return preset, "balanced"
+
+
+def _resolve_preference(request: ChatCompletionRequest) -> str:
+    """Resolve routing preference from request.
+    
+    Wrapper around _resolve_mode_and_preference that returns only the preference string.
+    Used by tests and legacy code.
+    """
+    _, preference = _resolve_mode_and_preference(request)
+    return preference
 
 
 def _build_upstream_body(

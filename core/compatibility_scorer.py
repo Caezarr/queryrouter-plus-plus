@@ -261,24 +261,28 @@ class CompatibilityScorer:
         
         # Assume fixed input size of 150 tokens (average prompt)
         estimated_input_tokens = 150
-        total_tokens = estimated_input_tokens + estimated_output_tokens
         
-        # Calculate query-specific cost
+        # Calculate query-specific cost for this model
         query_cost = (
             model_profile.cost_input_per_1m * estimated_input_tokens / 1_000_000
             + model_profile.cost_output_per_1m * estimated_output_tokens / 1_000_000
         )
         
-        # Normalize against the min/max costs at this token count
-        # Use normalizer's fitted min/max as baseline (they're per-1M-token sums)
-        # Scale to this query's token count
-        denom = self.normalizer.cost_normalizer.max_cost - self.normalizer.cost_normalizer.min_cost
+        # To normalize, calculate what the min/max costs would be for this query
+        # across all models (using the fitted per-1M rates scaled to this query's tokens)
+        min_query_cost = (
+            self.normalizer.cost_normalizer.min_cost * (estimated_input_tokens + estimated_output_tokens) / 1_000_000
+        )
+        max_query_cost = (
+            self.normalizer.cost_normalizer.max_cost * (estimated_input_tokens + estimated_output_tokens) / 1_000_000
+        )
+        
+        denom = max_query_cost - min_query_cost
         if denom == 0:
             return 1.0
         
-        # Normalize the query cost as if it were per-1M tokens for comparison
-        effective_cost_per_1m = query_cost * 1_000_000 / total_tokens
-        normalized = (effective_cost_per_1m - self.normalizer.cost_normalizer.min_cost) / denom
+        # Normalize and invert (lower cost = higher score)
+        normalized = (query_cost - min_query_cost) / denom
         return float(np.clip(1.0 - normalized, 0.0, 1.0))
 
     def _latency_score(
