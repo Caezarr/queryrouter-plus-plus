@@ -135,6 +135,7 @@ Structured taxonomy of 10 query categories (unchanged from v1.0).
 2. **MoE efficiency**: 2026 models heavily favor MoE architectures (Mistral Large 3, LLaMA 4, Qwen 3, DeepSeek V3). Active parameter count is a better proxy for inference energy than total parameters.
 3. **Reasoning model overhead**: o3 and other reasoning models consume significantly more compute per query due to extended chain-of-thought generation. This is not captured in simple per-token estimates.
 4. **Energy mix**: CO2 per kWh varies by data center location. Google claims high renewable usage; others less transparent.
+5. **Inference CO₂ coverage (tracked in #13)**: As of the 2026-08-30 matrix, only `deepseek-v3` has a filled `inference_co2_per_1m_tokens_grams` value. The other 11 rows leave that field blank. When coverage is this thin, `CompatibilityScorer._ecology_score` effectively collapses most of the pool onto shared imputation — so `w_ecology` barely discriminates. Do **not** invent CO₂ numbers without a cited source. Prefer: (a) sourced values with confidence tags for ≥ half the pool, (b) relative efficiency proxies only when sourced (e.g. active params for MoE, public Wh/query figures), or (c) explicitly warn / down-weight the eco axis via an `eco_confidence` field in the score breakdown. Re-collect on a ~3-month cadence; the last full eco pass predates the Aug 2026 cost/latency refresh.
 
 ## Collection Methodology
 
