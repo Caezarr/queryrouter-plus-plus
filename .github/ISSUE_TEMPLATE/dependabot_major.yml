@@ -1,0 +1,32 @@
+name: Dependabot major
+description: Track a major dependency bump that needs a review gate before merge
+labels: [dependencies, needs-review]
+body:
+  - type: input
+    id: package
+    attributes:
+      label: Package
+      placeholder: e.g. fastapi / fastapi / lucide-react
+    validations:
+      required: true
+  - type: input
+    id: from_to
+    attributes:
+      label: From → to
+      placeholder: e.g. 0.561.0 → 1.41.0
+    validations:
+      required: true
+  - type: textarea
+    id: risk
+    attributes:
+      label: Why this needs a gate
+      description: Breaking changes, peer deps, CI impact, or unknown blast radius
+    validations:
+      required: true
+  - type: textarea
+    id: plan
+    attributes:
+      label: Verification plan
+      description: Tests / smoke steps before merge
+    validations:
+      required: true
