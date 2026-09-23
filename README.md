@@ -14,6 +14,8 @@
 
 QueryRouter++ is an open-source LLM routing framework that selects the optimal model for each query using a **formalized compatibility function** `C(q, m, w)` scored across four axes: **performance**, **cost**, **latency**, and **ecological impact**. User preferences are expressed as weights on a simplex `Δ³`, enabling fine-grained multi-criteria optimization.
 
+**Quick Start:** Python 3.11+ required · `pip install poetry && poetry install` · API docs at `/docs`
+
 ```
 query + tool_context ──► QueryRouter++ ──► selected model
                               │
@@ -32,7 +34,9 @@ query + tool_context ──► QueryRouter++ ──► selected model
 
 ## Installation
 
-**Requirements:** Python 3.11+, [Poetry](https://python-poetry.org/)
+**Requirements:** 
+- **Python 3.11+** (tested on 3.11, 3.12)
+- [Poetry](https://python-poetry.org/) for dependency management
 
 ```bash
 git clone https://github.com/Caezarr/queryrouter-plus-plus.git
@@ -40,6 +44,8 @@ cd queryrouter-plus-plus
 pip install poetry
 poetry install
 ```
+
+> **API Usage:** After installation, start the server with `poetry run uvicorn queryrouter.api.main:app --reload` and visit [http://localhost:8000/docs](http://localhost:8000/docs) for interactive API documentation.
 
 **Optional — copy environment config:**
 
@@ -354,7 +360,7 @@ We report these honestly because they are contributions too:
 - **o3 is never selected in multi-criteria mode:** The 8× reasoning cost multiplier makes o3 uncompetitive for any preference vector with non-zero weight on cost or latency. It is selected only under pure performance weighting (`w_P = 1.0`) on math/reasoning queries — paying 8.3× the pool median for +5.3% performance.
 - **Embedding routing loses accuracy (54%)** without measurable gain in simulation. Its theoretical advantage (out-of-distribution generalization) requires real-world validation.
 
-Full analysis: [`experiments/analysis_report.md`](experiments/analysis_report.md)
+Full analysis available in the evaluation notebooks at [`notebooks/exploration.ipynb`](notebooks/exploration.ipynb)
 
 ---
 

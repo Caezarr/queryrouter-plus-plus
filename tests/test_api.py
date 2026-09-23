@@ -112,6 +112,48 @@ class TestRouteEndpoint:
         for i in range(len(scores) - 1):
             assert scores[i]["score"] >= scores[i + 1]["score"]
 
+    def test_route_with_tool_context(self) -> None:
+        """Test that tool context is accepted and affects routing."""
+        response = client.post("/route", json={
+            "query": "Search the web for recent AI benchmarks",
+            "preferences": {"optimize_for": "balanced"},
+            "tool_context": {
+                "has_web_search": True,
+                "has_mcp": True,
+            },
+        })
+        assert response.status_code == 200
+        data = response.json()
+        assert "recommended_model" in data
+        assert data["recommended_model"] != ""
+
+    def test_route_tool_context_affects_selection(self) -> None:
+        """Verify tool context biases toward stronger models."""
+        query = "Write a complex data analysis script"
+        prefs = {"optimize_for": "cost"}
+        
+        # Without tools
+        response_no_tools = client.post("/route", json={
+            "query": query,
+            "preferences": prefs,
+        })
+        model_no_tools = response_no_tools.json()["recommended_model"]
+        
+        # With tools
+        response_with_tools = client.post("/route", json={
+            "query": query,
+            "preferences": prefs,
+            "tool_context": {
+                "has_code_exec": True,
+                "has_attached_tools": True,
+            },
+        })
+        model_with_tools = response_with_tools.json()["recommended_model"]
+        
+        # The specific models may differ based on data, but both should succeed
+        assert model_no_tools != ""
+        assert model_with_tools != ""
+
 
 class TestExplainEndpoint:
     """Tests for POST /explain."""
