@@ -14,7 +14,7 @@
 
 QueryRouter++ is an open-source LLM routing framework that selects the optimal model for each query using a **formalized compatibility function** `C(q, m, w)` scored across four axes: **performance**, **cost**, **latency**, and **ecological impact**. User preferences are expressed as weights on a simplex `Δ³`, enabling fine-grained multi-criteria optimization.
 
-**Quick Start:** Python 3.11+ required · `pip install poetry && poetry install` · API docs at `/docs`
+**[📖 Quickstart Guide](docs/QUICKSTART.md)** · Python 3.11+ required · `pip install poetry && poetry install` · API docs at `/docs`
 
 ```
 query + tool_context ──► QueryRouter++ ──► selected model
