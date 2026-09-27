@@ -482,6 +482,13 @@ poetry run black --check .        # formatting
 
 ---
 
+## Support & Sponsorship
+
+- **[Support](SUPPORT.md)** — bug reports, security policy, contact
+- **[Sponsor on GitHub](https://github.com/sponsors/Caezarr)** — fund development
+
+---
+
 ## Citation
 
 If you use QueryRouter++ in academic work, please cite:
