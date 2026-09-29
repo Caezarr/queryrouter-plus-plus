@@ -213,6 +213,14 @@ Full guide: [`docs/LIBRECHAT_4MODES.md`](docs/LIBRECHAT_4MODES.md)
 
 ---
 
+## Documentation
+
+All documentation is organized under `docs/` for operator and contributor discovery:
+
+**[📑 Documentation Index](docs/INDEX.md)** — Quick start, LibreChat integration, routing/compatibility runbooks, security, support, and contributing guidelines
+
+---
+
 ## Server & Demo
 
 ### Start the API server
