@@ -219,6 +219,8 @@ All documentation is organized under `docs/` for operator and contributor discov
 
 **[📑 Documentation Index](docs/INDEX.md)** — Quick start, LibreChat integration, routing/compatibility runbooks, security, support, and contributing guidelines
 
+**[⚖️ Scoring System Reference](docs/SCORING.md)** — Complete guide to multi-criteria scoring: the four axes, weight presets, tool-aware routing, custom tuning, and safe configuration practices
+
 ---
 
 ## Server & Demo
