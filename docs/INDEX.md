@@ -15,6 +15,7 @@ Welcome to the QueryRouter++ documentation. This index helps operators and contr
 
 - **[SCORING.md](SCORING.md)** — Complete scoring system reference: the four axes (performance, cost, latency, ecology), default weight presets, tool-aware routing, custom weight tuning, hard constraints, and safe configuration practices
 - **[ROUTING-COMPATIBILITY-MATRIX.md](ROUTING-COMPATIBILITY-MATRIX.md)** — Runbook for keeping scoring accurate when models, providers, or cost tables change
+- **[TROUBLESHOOTING.md](TROUBLESHOOTING.md)** — Diagnostic guide for common failures: model registry load errors, empty routing candidates, LibreChat preset mismatches, OpenAI-compat auth issues, and pytest subset commands
 
 ## Security, Support & Contributing
 
