@@ -271,7 +271,34 @@ curl -X POST http://localhost:8000/route \
 | `POST` | `/route` | Route a query — returns selected model + score breakdown |
 | `GET` | `/models` | List all models with profiles |
 | `GET` | `/health` | Health check |
+| `GET` | `/openapi.json` | OpenAPI 3 schema (machine-readable) |
 | `GET` | `/docs` | Interactive Swagger UI |
+
+### OpenAPI 3 Schema
+
+QueryRouter++ provides a complete OpenAPI 3 schema for all endpoints. Use it for client SDK generation, API documentation, or integration testing:
+
+```bash
+# Fetch the live schema
+curl http://localhost:8000/openapi.json > openapi.json
+
+# Or use the static export in the repository
+cat docs/openapi.json
+```
+
+The schema documents all request/response structures including:
+- `/route` endpoint with `RoutingRequest` and `RoutingResponse` schemas
+- Score breakdown structure (`ModelScore` with `breakdown` fields)
+- `UserPreferences` with all optimization presets
+- `ToolContext` with tool-aware routing flags
+
+**Regenerating the schema:**
+
+```bash
+python scripts/export_openapi.py  # Updates docs/openapi.json and docs/openapi.yaml
+```
+
+The CI pipeline validates that the static schema stays in sync with the implementation.
 
 ### Docker
 
