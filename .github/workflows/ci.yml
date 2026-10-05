@@ -40,6 +40,16 @@ jobs:
       - name: Run tests
         run: poetry run pytest
 
+      - name: Check OpenAPI schema is up to date
+        run: |
+          poetry run python scripts/export_openapi.py
+          if ! git diff --quiet docs/openapi.json docs/openapi.yaml; then
+            echo "Error: OpenAPI schema is out of sync!"
+            echo "Run 'python scripts/export_openapi.py' and commit the changes."
+            git diff docs/openapi.json docs/openapi.yaml
+            exit 1
+          fi
+
   security:
     runs-on: ubuntu-latest
     steps:
