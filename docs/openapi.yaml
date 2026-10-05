@@ -454,7 +454,7 @@ components:
         type:
           type: string
           title: Error Type
-        type: object
+      type: object
       required:
       - loc
       - msg
