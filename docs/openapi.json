@@ -1,0 +1,635 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "QueryRouter++",
+    "description": "Multi-criteria LLM routing API based on formalized query-model compatibility.",
+    "license": {
+      "name": "MIT"
+    },
+    "version": "0.2.0"
+  },
+  "paths": {
+    "/v1/models": {
+      "get": {
+        "summary": "List Models",
+        "description": "OpenAI-compatible model listing.\n\nReturns the 4 LibreChat preset modes instead of actual models,\nfor the simplified 4-modes integration.",
+        "operationId": "list_models_v1_models_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "type": "object",
+                  "title": "Response List Models V1 Models Get"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/chat/completions": {
+      "post": {
+        "summary": "Chat Completions",
+        "description": "OpenAI-compatible chat completions with intelligent routing.\n\nAccepts standard OpenAI chat format. Routes to the best model based\non the user's mode/preset, then proxies the request to the provider.\n\nSupports LibreChat 4-modes preset names (mode-ecologique, mode-performance, etc.)",
+        "operationId": "chat_completions_v1_chat_completions_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ChatCompletionRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "title": "Response Chat Completions V1 Chat Completions Post"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/health": {
+      "get": {
+        "summary": "Health Check",
+        "description": "Health check endpoint.\n\nReturns:\n    Dictionary with status \"ok\" and version info.",
+        "operationId": "health_check_health_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": {
+                    "type": "string"
+                  },
+                  "type": "object",
+                  "title": "Response Health Check Health Get"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/models": {
+      "get": {
+        "summary": "List Models",
+        "description": "List all available models with their profiles.\n\nReturns:\n    Dictionary with \"models\" key containing list of model profile dicts.",
+        "operationId": "list_models_models_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": {
+                    "items": {
+                      "additionalProperties": true,
+                      "type": "object"
+                    },
+                    "type": "array"
+                  },
+                  "type": "object",
+                  "title": "Response List Models Models Get"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/route": {
+      "post": {
+        "summary": "Route Query",
+        "description": "Route a query to the optimal LLM.\n\nArgs:\n    request: RoutingRequest with query and user preferences.\n\nReturns:\n    RoutingResponse with recommended model and score breakdown.\n\nRaises:\n    HTTPException: If routing fails.",
+        "operationId": "route_query_route_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RoutingRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RoutingResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/explain": {
+      "post": {
+        "summary": "Explain Routing",
+        "description": "Generate a human-readable explanation of the routing decision.\n\nArgs:\n    request: RoutingRequest to explain.\n\nReturns:\n    Dictionary with \"explanation\" key.\n\nRaises:\n    HTTPException: If explanation generation fails.",
+        "operationId": "explain_routing_explain_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RoutingRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": {
+                    "type": "string"
+                  },
+                  "type": "object",
+                  "title": "Response Explain Routing Explain Post"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "ChatCompletionRequest": {
+        "properties": {
+          "model": {
+            "type": "string",
+            "title": "Model",
+            "default": "queryrouter-auto"
+          },
+          "messages": {
+            "items": {
+              "$ref": "#/components/schemas/ChatMessage"
+            },
+            "type": "array",
+            "title": "Messages"
+          },
+          "temperature": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Temperature"
+          },
+          "top_p": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Top P"
+          },
+          "max_tokens": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Max Tokens"
+          },
+          "stream": {
+            "type": "boolean",
+            "title": "Stream",
+            "default": false
+          },
+          "routing_preference": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Routing Preference",
+            "description": "Routing preference: performance, cost, cost_performance, ecology, balanced"
+          }
+        },
+        "additionalProperties": true,
+        "type": "object",
+        "required": [
+          "messages"
+        ],
+        "title": "ChatCompletionRequest"
+      },
+      "ChatMessage": {
+        "properties": {
+          "role": {
+            "type": "string",
+            "title": "Role"
+          },
+          "content": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "items": {},
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Content"
+          },
+          "name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Name"
+          }
+        },
+        "type": "object",
+        "required": [
+          "role"
+        ],
+        "title": "ChatMessage"
+      },
+      "HTTPValidationError": {
+        "properties": {
+          "detail": {
+            "items": {
+              "$ref": "#/components/schemas/ValidationError"
+            },
+            "type": "array",
+            "title": "Detail"
+          }
+        },
+        "type": "object",
+        "title": "HTTPValidationError"
+      },
+      "ModelScore": {
+        "properties": {
+          "model_id": {
+            "type": "string",
+            "title": "Model Id",
+            "description": "Unique model identifier."
+          },
+          "score": {
+            "type": "number",
+            "maximum": 1.0,
+            "minimum": 0.0,
+            "title": "Score",
+            "description": "Composite score in [0, 1]."
+          },
+          "breakdown": {
+            "additionalProperties": {
+              "type": "number"
+            },
+            "type": "object",
+            "title": "Breakdown",
+            "description": "Per-axis score breakdown."
+          }
+        },
+        "type": "object",
+        "required": [
+          "model_id",
+          "score"
+        ],
+        "title": "ModelScore",
+        "description": "Score breakdown for a single model in a routing decision.\n\nAttributes:\n    model_id: Unique model identifier.\n    score: Overall composite score S(q, m, w) in [0, 1].\n    breakdown: Per-axis scores {performance, cost, latency, ecology}."
+      },
+      "RoutingRequest": {
+        "properties": {
+          "query": {
+            "type": "string",
+            "minLength": 1,
+            "title": "Query",
+            "description": "The query to route to the optimal LLM."
+          },
+          "preferences": {
+            "$ref": "#/components/schemas/UserPreferences",
+            "description": "User preferences for routing optimization."
+          },
+          "tool_context": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ToolContext"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Active tool surfaces. Triggers a performance weight boost when set."
+          },
+          "context": {
+            "anyOf": [
+              {
+                "additionalProperties": {
+                  "type": "string"
+                },
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Context",
+            "description": "Optional context metadata (conversation_id, domain, etc.)."
+          }
+        },
+        "type": "object",
+        "required": [
+          "query",
+          "preferences"
+        ],
+        "title": "RoutingRequest",
+        "description": "Request body for the /route endpoint.\n\nAttributes:\n    query: The user's raw query string to route.\n    preferences: User preferences controlling model selection.\n    tool_context: Optional active tool surfaces. When present, routing\n        shifts toward higher-performance models.\n    context: Optional metadata (e.g. conversation_id, domain hints)."
+      },
+      "RoutingResponse": {
+        "properties": {
+          "recommended_model": {
+            "type": "string",
+            "title": "Recommended Model",
+            "description": "The model_id of the recommended LLM."
+          },
+          "scores": {
+            "items": {
+              "$ref": "#/components/schemas/ModelScore"
+            },
+            "type": "array",
+            "title": "Scores",
+            "description": "All evaluated models with scores, sorted by score descending."
+          },
+          "explanation": {
+            "type": "string",
+            "title": "Explanation",
+            "description": "Human-readable explanation of the routing decision.",
+            "default": ""
+          },
+          "estimated_cost_usd": {
+            "type": "number",
+            "minimum": 0.0,
+            "title": "Estimated Cost Usd",
+            "description": "Estimated cost in USD for this query.",
+            "default": 0.0
+          },
+          "estimated_latency_ms": {
+            "type": "integer",
+            "minimum": 0.0,
+            "title": "Estimated Latency Ms",
+            "description": "Estimated inference latency in milliseconds.",
+            "default": 0
+          }
+        },
+        "type": "object",
+        "required": [
+          "recommended_model"
+        ],
+        "title": "RoutingResponse",
+        "description": "Response body for the /route endpoint.\n\nAttributes:\n    recommended_model: The model_id selected by the router.\n    scores: Scored list of all eligible models, sorted descending.\n    explanation: Human-readable explanation of the routing decision.\n    estimated_cost_usd: Estimated cost in USD for this query on the selected model.\n    estimated_latency_ms: Estimated latency in ms for the selected model."
+      },
+      "ToolContext": {
+        "properties": {
+          "has_web_search": {
+            "type": "boolean",
+            "title": "Has Web Search",
+            "default": false
+          },
+          "has_file_search": {
+            "type": "boolean",
+            "title": "Has File Search",
+            "default": false
+          },
+          "has_code_exec": {
+            "type": "boolean",
+            "title": "Has Code Exec",
+            "default": false
+          },
+          "has_artifacts": {
+            "type": "boolean",
+            "title": "Has Artifacts",
+            "default": false
+          },
+          "has_attached_tools": {
+            "type": "boolean",
+            "title": "Has Attached Tools",
+            "default": false
+          },
+          "has_mcp": {
+            "type": "boolean",
+            "title": "Has Mcp",
+            "default": false
+          },
+          "has_agent": {
+            "type": "boolean",
+            "title": "Has Agent",
+            "default": false
+          }
+        },
+        "type": "object",
+        "title": "ToolContext",
+        "description": "Active tool surfaces for the current request.\n\nWhen tools are active, the router shifts weight toward performance\nbecause tool-augmented queries typically require stronger models.\n\nAttributes:\n    has_web_search: Web search tool is available.\n    has_file_search: File/document search is available.\n    has_code_exec: Code interpreter / sandbox is available.\n    has_artifacts: Artifact generation mode is active.\n    has_attached_tools: One or more plugins/tools attached to the conversation.\n    has_mcp: An MCP server is connected.\n    has_agent: Request targets a persisted agent."
+      },
+      "UserPreferences": {
+        "properties": {
+          "optimize_for": {
+            "type": "string",
+            "enum": [
+              "performance",
+              "cost",
+              "cost_performance",
+              "ecology",
+              "balanced",
+              "custom"
+            ],
+            "title": "Optimize For"
+          },
+          "weights": {
+            "anyOf": [
+              {
+                "additionalProperties": {
+                  "type": "number"
+                },
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Weights",
+            "description": "Weight vector {w_performance, w_cost, w_latency, w_ecology}. Sum must equal 1."
+          },
+          "budget_per_query_usd": {
+            "anyOf": [
+              {
+                "type": "number",
+                "exclusiveMinimum": 0.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Budget Per Query Usd",
+            "description": "Maximum USD cost per query. Models exceeding this are excluded."
+          },
+          "max_latency_ms": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "exclusiveMinimum": 0.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Max Latency Ms",
+            "description": "Maximum acceptable inference latency in milliseconds."
+          },
+          "eco_mode": {
+            "type": "boolean",
+            "title": "Eco Mode",
+            "description": "When true, applies a bonus to eco-friendly models.",
+            "default": false
+          },
+          "allowed_models": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Allowed Models",
+            "description": "If set, only these model_ids are considered."
+          },
+          "excluded_models": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Excluded Models",
+            "description": "Model_ids to exclude from routing."
+          }
+        },
+        "type": "object",
+        "required": [
+          "optimize_for"
+        ],
+        "title": "UserPreferences",
+        "description": "User preferences controlling multi-criteria LLM routing.\n\nDefines the optimization objective (preset or custom weights), hard\nconstraints (budget, latency), and model filtering rules.\n\nWhen ``optimize_for`` is set to a preset value (e.g. ``\"performance\"``),\nthe corresponding weight vector is auto-assigned. Use ``\"custom\"`` and\nprovide explicit ``weights`` for fine-grained control.\n\nAttributes:\n    optimize_for: Optimization preset or \"custom\" for manual weights.\n    weights: Weight vector {w_performance, w_cost, w_latency, w_ecology}.\n        Auto-populated for presets; required for \"custom\".\n    budget_per_query_usd: Max cost in USD per query (hard filter). None = no limit.\n    max_latency_ms: Max latency in ms (hard filter). None = no limit.\n    eco_mode: Bias toward ecologically efficient models.\n    allowed_models: Whitelist of model_ids. None = all eligible.\n    excluded_models: Blacklist of model_ids. None = no exclusions.\n\nExample:\n    >>> prefs = UserPreferences(optimize_for=\"cost\", budget_per_query_usd=0.01)\n    >>> prefs.weights\n    {'w_performance': 0.1, 'w_cost': 0.7, 'w_latency': 0.1, 'w_ecology': 0.1}"
+      },
+      "ValidationError": {
+        "properties": {
+          "loc": {
+            "items": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "integer"
+                }
+              ]
+            },
+            "type": "array",
+            "title": "Location"
+          },
+          "msg": {
+            "type": "string",
+            "title": "Message"
+          },
+          "type": {
+            "type": "string",
+            "title": "Error Type"
+          },
+          "input": {
+            "title": "Input"
+          },
+          "ctx": {
+            "type": "object",
+            "title": "Context"
+          }
+        },
+        "type": "object",
+        "required": [
+          "loc",
+          "msg",
+          "type"
+        ],
+        "title": "ValidationError"
+      }
+    }
+  }
+}
