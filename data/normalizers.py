@@ -61,15 +61,9 @@ class BenchmarkNormalizer:
                 if val is not None:
                     values[i].append(val)
 
-        self.means = np.array(
-            [np.mean(v) if v else 0.5 for v in values], dtype=np.float64
-        )
-        self.mins = np.array(
-            [np.min(v) if v else 0.0 for v in values], dtype=np.float64
-        )
-        self.maxs = np.array(
-            [np.max(v) if v else 1.0 for v in values], dtype=np.float64
-        )
+        self.means = np.array([np.mean(v) if v else 0.5 for v in values], dtype=np.float64)
+        self.mins = np.array([np.min(v) if v else 0.0 for v in values], dtype=np.float64)
+        self.maxs = np.array([np.max(v) if v else 1.0 for v in values], dtype=np.float64)
         self._fitted = True
 
     def transform(self, profile: ModelProfile) -> np.ndarray:
@@ -90,10 +84,7 @@ class BenchmarkNormalizer:
             raise RuntimeError("BenchmarkNormalizer must be fit() before transform()")
 
         raw = np.array(
-            [
-                profile.benchmarks.get(bname, None)
-                for bname in self.BENCHMARK_NAMES
-            ],
+            [profile.benchmarks.get(bname, None) for bname in self.BENCHMARK_NAMES],
             dtype=object,
         )
 
@@ -268,9 +259,7 @@ class FeatureNormalizer:
         self.cost_normalizer.fit(profiles)
         self.eco_normalizer.fit(profiles)
 
-        latencies = [
-            p.latency_ms for p in profiles if p.latency_ms is not None
-        ]
+        latencies = [p.latency_ms for p in profiles if p.latency_ms is not None]
         if latencies:
             self.max_latency = float(max(latencies))
 
@@ -307,9 +296,7 @@ class FeatureNormalizer:
 
         eco_score = self.eco_normalizer.transform(profile)
 
-        return np.concatenate(
-            [bench_vec, np.array([cost_score, latency_score, eco_score])]
-        )
+        return np.concatenate([bench_vec, np.array([cost_score, latency_score, eco_score])])
 
     @property
     def feature_names(self) -> list[str]:

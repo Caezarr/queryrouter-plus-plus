@@ -21,8 +21,8 @@ from __future__ import annotations
 
 import argparse
 import json
-import sys
 import os
+import sys
 from collections import Counter
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -129,11 +129,18 @@ def _normalize_model_id(raw: str) -> str | None:
 
     # If it already looks like a catalogue ID, pass through
     catalogue_ids = {
-        "claude-opus-4-6", "claude-sonnet-4-6", "claude-haiku-4-5",
-        "gpt-4-1", "gpt-4-1-mini", "o3",
-        "gemini-2-5-pro", "gemini-2-5-flash",
-        "mistral-large-3", "llama-4-maverick",
-        "qwen3-235b", "deepseek-v3",
+        "claude-opus-4-6",
+        "claude-sonnet-4-6",
+        "claude-haiku-4-5",
+        "gpt-4-1",
+        "gpt-4-1-mini",
+        "o3",
+        "gemini-2-5-pro",
+        "gemini-2-5-flash",
+        "mistral-large-3",
+        "llama-4-maverick",
+        "qwen3-235b",
+        "deepseek-v3",
     }
     if cleaned in catalogue_ids:
         return cleaned
@@ -145,9 +152,10 @@ def _normalize_model_id(raw: str) -> str | None:
 @dataclass
 class ConversationPair:
     """A user query paired with the model that responded."""
+
     query: str
     model_used: str  # Already normalized to catalogue ID
-    model_raw: str   # Original name from DB
+    model_raw: str  # Original name from DB
     conversation_id: str
     token_count: int | None = None
     has_feedback: bool = False
@@ -157,6 +165,7 @@ class ConversationPair:
 @dataclass
 class EvalResult:
     """Results of evaluating the router on real data."""
+
     total_queries: int = 0
     filtered_out: int = 0  # Queries skipped (agent_*, unknown models)
     agreement_count: int = 0
@@ -172,6 +181,7 @@ class EvalResult:
 # ---------------------------------------------------------------------------
 # Step 1: Extract from MongoDB
 # ---------------------------------------------------------------------------
+
 
 def extract_from_mongodb(
     mongo_uri: str,
@@ -217,11 +227,13 @@ def extract_from_mongodb(
         conv_id = msg.get("conversationId", "")
         msg_id = msg.get("messageId", "")
 
-        response = messages_col.find_one({
-            "conversationId": conv_id,
-            "parentMessageId": msg_id,
-            "isCreatedByUser": False,
-        })
+        response = messages_col.find_one(
+            {
+                "conversationId": conv_id,
+                "parentMessageId": msg_id,
+                "isCreatedByUser": False,
+            }
+        )
 
         if not response:
             continue
@@ -233,7 +245,9 @@ def extract_from_mongodb(
         model_normalized = _normalize_model_id(model_raw)
         if model_normalized is None:
             filtered += 1
-            skipped_models[model_raw.split("_")[0] + "_*" if model_raw.startswith("agent_") else model_raw] += 1
+            skipped_models[
+                model_raw.split("_")[0] + "_*" if model_raw.startswith("agent_") else model_raw
+            ] += 1
             continue
 
         feedback = response.get("feedback")
@@ -244,15 +258,17 @@ def extract_from_mongodb(
             if rating is not None:
                 feedback_positive = rating > 0
 
-        pairs.append(ConversationPair(
-            query=text,
-            model_used=model_normalized,
-            model_raw=model_raw,
-            conversation_id=conv_id,
-            token_count=response.get("tokenCount"),
-            has_feedback=has_feedback,
-            feedback_positive=feedback_positive,
-        ))
+        pairs.append(
+            ConversationPair(
+                query=text,
+                model_used=model_normalized,
+                model_raw=model_raw,
+                conversation_id=conv_id,
+                token_count=response.get("tokenCount"),
+                has_feedback=has_feedback,
+                feedback_positive=feedback_positive,
+            )
+        )
 
         if limit > 0 and len(pairs) >= limit:
             break
@@ -269,19 +285,23 @@ def extract_from_mongodb(
 # Step 2: Export / Load JSONL
 # ---------------------------------------------------------------------------
 
+
 def export_to_jsonl(pairs: list[ConversationPair], path: str) -> None:
     """Export extracted pairs to JSONL for offline analysis."""
     with open(path, "w") as f:
         for p in pairs:
-            json.dump({
-                "query": p.query,
-                "model_used": p.model_used,
-                "model_raw": p.model_raw,
-                "conversation_id": p.conversation_id,
-                "token_count": p.token_count,
-                "has_feedback": p.has_feedback,
-                "feedback_positive": p.feedback_positive,
-            }, f)
+            json.dump(
+                {
+                    "query": p.query,
+                    "model_used": p.model_used,
+                    "model_raw": p.model_raw,
+                    "conversation_id": p.conversation_id,
+                    "token_count": p.token_count,
+                    "has_feedback": p.has_feedback,
+                    "feedback_positive": p.feedback_positive,
+                },
+                f,
+            )
             f.write("\n")
     print(f"Exported {len(pairs)} pairs to {path}")
 
@@ -300,6 +320,7 @@ def load_from_jsonl(path: str) -> list[ConversationPair]:
 # ---------------------------------------------------------------------------
 # Step 3: Evaluate
 # ---------------------------------------------------------------------------
+
 
 def evaluate(
     pairs: list[ConversationPair],
@@ -343,24 +364,24 @@ def evaluate(
         if router_pick == pair.model_used:
             result.agreement_count += 1
         else:
-            disagreements.append({
-                "query": pair.query[:100],
-                "actual": pair.model_used,
-                "actual_raw": pair.model_raw,
-                "router": router_pick,
-                "router_score": response.scores[0].score if response.scores else 0,
-                "feedback": pair.feedback_positive,
-            })
+            disagreements.append(
+                {
+                    "query": pair.query[:100],
+                    "actual": pair.model_used,
+                    "actual_raw": pair.model_raw,
+                    "router": router_pick,
+                    "router_score": response.scores[0].score if response.scores else 0,
+                    "feedback": pair.feedback_positive,
+                }
+            )
 
         # Cost comparison — use real token count when available
         tokens = pair.token_count or 1000
-        router_costs.append(estimate_query_cost(
-            router.registry.get_by_id(router_pick), tokens
-        ))
+        router_costs.append(estimate_query_cost(router.registry.get_by_id(router_pick), tokens))
         if pair.model_used in known_models:
-            actual_costs.append(estimate_query_cost(
-                router.registry.get_by_id(pair.model_used), tokens
-            ))
+            actual_costs.append(
+                estimate_query_cost(router.registry.get_by_id(pair.model_used), tokens)
+            )
         else:
             # Model not in catalogue — use router cost as fallback
             actual_costs.append(router_costs[-1])
@@ -391,27 +412,31 @@ def print_report(result: EvalResult, preference: str) -> None:
     print("=" * 70)
 
     print(f"\n  Queries evaluated:  {result.total_queries:,}")
-    print(f"  Agreement rate:     {result.agreement_count:,} / {result.total_queries:,} ({result.agreement_rate:.1%})")
+    print(
+        f"  Agreement rate:     {result.agreement_count:,} / {result.total_queries:,} ({result.agreement_rate:.1%})"
+    )
     print(f"  Cost (actual):      ${result.total_cost_actual_usd:.2f}")
     print(f"  Cost (router):      ${result.total_cost_router_usd:.2f}")
     savings_sign = "+" if result.estimated_cost_savings_pct < 0 else ""
-    print(f"  Cost savings:       {result.estimated_cost_savings_pct:+.1f}%"
-          f"  (${result.total_cost_actual_usd - result.total_cost_router_usd:+.2f})")
+    print(
+        f"  Cost savings:       {result.estimated_cost_savings_pct:+.1f}%"
+        f"  (${result.total_cost_actual_usd - result.total_cost_router_usd:+.2f})"
+    )
 
-    print(f"\n  --- Model Distribution (Router) ---")
+    print("\n  --- Model Distribution (Router) ---")
     for model, count in sorted(result.router_picks.items(), key=lambda x: -x[1]):
         pct = count / result.total_queries * 100
         bar = "#" * int(pct / 2)
         print(f"  {model:<30} {count:>6} ({pct:5.1f}%) {bar}")
 
-    print(f"\n  --- Model Distribution (Actual) ---")
+    print("\n  --- Model Distribution (Actual) ---")
     for model, count in sorted(result.actual_picks.items(), key=lambda x: -x[1]):
         pct = count / result.total_queries * 100
         bar = "#" * int(pct / 2)
         print(f"  {model:<30} {count:>6} ({pct:5.1f}%) {bar}")
 
     if result.disagreements:
-        print(f"\n  --- Sample Disagreements ---")
+        print("\n  --- Sample Disagreements ---")
         for d in result.disagreements[:10]:
             fb = ""
             if d["feedback"] is True:
@@ -432,14 +457,18 @@ def print_comparison_summary(results: dict[str, EvalResult]) -> None:
     print("  COMPARISON SUMMARY — All Preferences")
     print("=" * 70)
 
-    header = f"  {'Preference':<20} {'Agreement':>10} {'Actual $':>10} {'Router $':>10} {'Savings':>10}"
+    header = (
+        f"  {'Preference':<20} {'Agreement':>10} {'Actual $':>10} {'Router $':>10} {'Savings':>10}"
+    )
     print(header)
     print("  " + "-" * 64)
 
     for pref, r in results.items():
         savings = f"{r.estimated_cost_savings_pct:+.1f}%"
         delta = r.total_cost_actual_usd - r.total_cost_router_usd
-        print(f"  {pref:<20} {r.agreement_rate:>9.1%} ${r.total_cost_actual_usd:>9.2f} ${r.total_cost_router_usd:>9.2f} {savings:>7} (${delta:+.2f})")
+        print(
+            f"  {pref:<20} {r.agreement_rate:>9.1%} ${r.total_cost_actual_usd:>9.2f} ${r.total_cost_router_usd:>9.2f} {savings:>7} (${delta:+.2f})"
+        )
 
     # Show top model per preference
     print(f"\n  {'Preference':<20} {'Top Router Pick':<30} {'%':>6}")
@@ -457,9 +486,14 @@ def print_comparison_summary(results: dict[str, EvalResult]) -> None:
 # Main
 # ---------------------------------------------------------------------------
 
+
 def main() -> None:
-    parser = argparse.ArgumentParser(description="Evaluate QueryRouter++ on LibreChat/WonkaChat data")
-    parser.add_argument("--mongo-uri", default=os.getenv("MONGO_URI", "mongodb://localhost:27017/LibreChat"))
+    parser = argparse.ArgumentParser(
+        description="Evaluate QueryRouter++ on LibreChat/WonkaChat data"
+    )
+    parser.add_argument(
+        "--mongo-uri", default=os.getenv("MONGO_URI", "mongodb://localhost:27017/LibreChat")
+    )
     parser.add_argument("--limit", type=int, default=5000, help="Max queries to evaluate (0=all)")
     parser.add_argument(
         "--preference",

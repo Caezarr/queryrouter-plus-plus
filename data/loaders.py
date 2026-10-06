@@ -17,7 +17,6 @@ import json
 import math
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Optional
 
 
 @dataclass
@@ -51,16 +50,16 @@ class ModelProfile:
     cost_input_per_1m: float = 0.0
     cost_output_per_1m: float = 0.0
     context_window_k: int = 0
-    latency_ms: Optional[int] = None
-    params_billions: Optional[float] = None
-    training_co2_tons: Optional[float] = None
-    inference_co2_per_1m_grams: Optional[float] = None
+    latency_ms: int | None = None
+    params_billions: float | None = None
+    training_co2_tons: float | None = None
+    inference_co2_per_1m_grams: float | None = None
     hardware_type: str = ""
     eco_confidence: str = "LOW"
-    chatbot_arena_elo: Optional[int] = None
+    chatbot_arena_elo: int | None = None
 
 
-def _parse_float(value: str) -> Optional[float]:
+def _parse_float(value: str) -> float | None:
     """Parse a CSV cell as float, returning None for empty or N/A values.
 
     Args:
@@ -79,7 +78,7 @@ def _parse_float(value: str) -> Optional[float]:
         return None
 
 
-def _parse_int(value: str) -> Optional[int]:
+def _parse_int(value: str) -> int | None:
     """Parse a CSV cell as integer, returning None for empty or N/A values.
 
     Args:
@@ -186,12 +185,12 @@ class ModelRegistry:
             profile = self.models.get(model_id)
             if profile is None:
                 continue
-            profile.cost_input_per_1m = _parse_float(
-                row.get("input_price_per_1m_tokens_usd", "")
-            ) or 0.0
-            profile.cost_output_per_1m = _parse_float(
-                row.get("output_price_per_1m_tokens_usd", "")
-            ) or 0.0
+            profile.cost_input_per_1m = (
+                _parse_float(row.get("input_price_per_1m_tokens_usd", "")) or 0.0
+            )
+            profile.cost_output_per_1m = (
+                _parse_float(row.get("output_price_per_1m_tokens_usd", "")) or 0.0
+            )
             profile.context_window_k = _parse_int(row.get("context_window_k", "")) or 0
             profile.latency_ms = _parse_int(row.get("avg_latency_ms", ""))
 

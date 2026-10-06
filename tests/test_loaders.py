@@ -5,21 +5,18 @@
 
 from __future__ import annotations
 
-import csv
-import tempfile
 from pathlib import Path
 
 import pytest
 
 from queryrouter.data.loaders import (
-    ModelProfile,
     ModelRegistry,
     _parse_float,
     _parse_int,
 )
 
-
 # -- Helpers --
+
 
 def _write_csv(path: Path, header: str, rows: list[str]) -> None:
     with open(path, "w") as f:
@@ -59,6 +56,7 @@ def _make_data_dir(tmp_path: Path) -> Path:
 
 # -- Tests for parse helpers --
 
+
 class TestParseFloat:
     def test_valid(self) -> None:
         assert _parse_float("3.14") == pytest.approx(3.14)
@@ -94,6 +92,7 @@ class TestParseInt:
 
 
 # -- Tests for ModelRegistry --
+
 
 class TestModelRegistry:
     def test_loads_all_models(self, tmp_path: Path) -> None:
@@ -152,7 +151,9 @@ class TestModelRegistry:
         with open(tmp_path / "models_benchmark_matrix.csv", "w") as f:
             f.write("# this is a comment\n")
             f.write("# another comment\n")
-            f.write("model_id,model_name,provider,mmlu_score,humaneval_score,gsm8k_score,math_score,hellaswag_score,arc_score,chatbot_arena_elo\n")
+            f.write(
+                "model_id,model_name,provider,mmlu_score,humaneval_score,gsm8k_score,math_score,hellaswag_score,arc_score,chatbot_arena_elo\n"
+            )
             f.write("m1,M1,P1,0.8,0.7,0.6,0.5,0.4,0.3,1300\n")
         _write_csv(
             tmp_path / "models_cost_matrix.csv",

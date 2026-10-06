@@ -32,7 +32,7 @@ def estimate_query_cost(
         # Fall back to 60/40 split
         input_tokens = int(total_tokens * 0.6)
         output_tokens = total_tokens - input_tokens
-    
+
     return (
         model.cost_input_per_1m * input_tokens / 1_000_000
         + model.cost_output_per_1m * output_tokens / 1_000_000

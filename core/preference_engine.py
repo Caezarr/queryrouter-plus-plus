@@ -78,18 +78,11 @@ class PreferenceEngine:
         # Budget constraint
         if preferences.budget_per_query_usd is not None:
             budget = preferences.budget_per_query_usd
-            filtered = [
-                m for m in filtered
-                if estimate_query_cost(m, estimated_tokens) <= budget
-            ]
+            filtered = [m for m in filtered if estimate_query_cost(m, estimated_tokens) <= budget]
 
         # Latency constraint
         if preferences.max_latency_ms is not None:
             max_lat = preferences.max_latency_ms
-            filtered = [
-                m for m in filtered
-                if m.latency_ms is None or m.latency_ms <= max_lat
-            ]
+            filtered = [m for m in filtered if m.latency_ms is None or m.latency_ms <= max_lat]
 
         return filtered
-

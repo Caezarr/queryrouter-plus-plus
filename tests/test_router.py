@@ -14,8 +14,6 @@ from pathlib import Path
 
 import pytest
 
-import numpy as np
-
 from queryrouter.api.schemas import RoutingRequest, ToolContext, UserPreferences
 from queryrouter.core.router import QueryRouter
 
@@ -127,9 +125,9 @@ class TestEmbeddingRouting:
 
     def test_different_queries_can_route_differently(self, embedding_router: QueryRouter) -> None:
         r1 = embedding_router.route(_make_request("What is 2+2?", "cost"))
-        r2 = embedding_router.route(_make_request(
-            "Write a comprehensive essay analyzing quantum mechanics", "performance"
-        ))
+        r2 = embedding_router.route(
+            _make_request("Write a comprehensive essay analyzing quantum mechanics", "performance")
+        )
         # Different queries with different preferences should potentially differ
         # (though not guaranteed with embedding approach)
         assert r1.recommended_model is not None
@@ -160,6 +158,7 @@ class TestToolAwareRouting:
 
     def test_tool_context_boosts_performance_weight(self, direct_router: QueryRouter) -> None:
         from queryrouter.core.compatibility_scorer import WeightVector
+
         base = WeightVector(w_performance=0.25, w_cost=0.25, w_latency=0.25, w_ecology=0.25)
         ctx = ToolContext(has_web_search=True)
         delta = direct_router._tool_boost_delta(ctx)
@@ -187,6 +186,7 @@ class TestToolAwareRouting:
 
     def test_shifted_weights_sum_to_one(self, direct_router: QueryRouter) -> None:
         from queryrouter.core.compatibility_scorer import WeightVector
+
         base = WeightVector(w_performance=0.25, w_cost=0.25, w_latency=0.25, w_ecology=0.25)
         shifted = direct_router._shift_weights_to_performance(base, 0.3)
         total = shifted.w_performance + shifted.w_cost + shifted.w_latency + shifted.w_ecology
@@ -204,7 +204,10 @@ class TestToolAwareRouting:
         # Tool-aware request should select a model with higher performance score
         base_score = next(s for s in base_resp.scores if s.model_id == base_resp.recommended_model)
         tool_score = next(s for s in tool_resp.scores if s.model_id == tool_resp.recommended_model)
-        assert tool_score.breakdown.get("performance", 0) >= base_score.breakdown.get("performance", 0) - 0.05
+        assert (
+            tool_score.breakdown.get("performance", 0)
+            >= base_score.breakdown.get("performance", 0) - 0.05
+        )
 
 
 class TestQueryComplexity:

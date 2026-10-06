@@ -19,10 +19,11 @@ import numpy as np
 
 from queryrouter.api.schemas import (
     ModelScore as APIModelScore,
+)
+from queryrouter.api.schemas import (
     RoutingRequest,
     RoutingResponse,
     ToolContext,
-    UserPreferences,
 )
 from queryrouter.core.compatibility_scorer import (
     CompatibilityScorer,
@@ -175,16 +176,22 @@ class QueryRouter:
             top = response.scores[0]
             for axis, value in top.breakdown.items():
                 weight_key = f"w_{axis}"
-                w = request.preferences.weights.get(weight_key, 0.0) if request.preferences.weights else 0.0
+                w = (
+                    request.preferences.weights.get(weight_key, 0.0)
+                    if request.preferences.weights
+                    else 0.0
+                )
                 lines.append(f"  {axis}: {value:.3f} (weight={w:.2f})")
 
-        lines.extend([
-            "",
-            f"Estimated Cost: ${response.estimated_cost_usd:.6f}",
-            f"Estimated Latency: {response.estimated_latency_ms}ms",
-            "",
-            "All Models Ranked:",
-        ])
+        lines.extend(
+            [
+                "",
+                f"Estimated Cost: ${response.estimated_cost_usd:.6f}",
+                f"Estimated Latency: {response.estimated_latency_ms}ms",
+                "",
+                "All Models Ranked:",
+            ]
+        )
         for i, ms in enumerate(response.scores[:5], 1):
             lines.append(f"  {i}. {ms.model_id}: {ms.score:.3f}")
 
@@ -245,9 +252,7 @@ class QueryRouter:
 
         all_scored = self.scorer.score_all(query_features, sorted_models, weights)
 
-        selected_model_id = (
-            sorted_models[-1].model_id if is_complex else sorted_models[0].model_id
-        )
+        selected_model_id = sorted_models[-1].model_id if is_complex else sorted_models[0].model_id
         selected_score = next(
             (s for s in all_scored if s.model_id == selected_model_id),
             all_scored[-1],
@@ -319,21 +324,21 @@ class QueryRouter:
             return 0.0
         cfg = self._tool_boost_cfg
         delta = 0.0
-        if any([
-            tool_context.has_web_search,
-            tool_context.has_file_search,
-            tool_context.has_code_exec,
-            tool_context.has_artifacts,
-            tool_context.has_attached_tools,
-        ]):
+        if any(
+            [
+                tool_context.has_web_search,
+                tool_context.has_file_search,
+                tool_context.has_code_exec,
+                tool_context.has_artifacts,
+                tool_context.has_attached_tools,
+            ]
+        ):
             delta += cfg["delta_first_class"]
         if tool_context.has_mcp or tool_context.has_agent:
             delta += cfg["delta_mcp"]
         return min(delta, cfg["cap"])
 
-    def _shift_weights_to_performance(
-        self, weights: WeightVector, delta: float
-    ) -> WeightVector:
+    def _shift_weights_to_performance(self, weights: WeightVector, delta: float) -> WeightVector:
         """Move delta of weight budget onto w_performance, keeping Σ w_i = 1.
 
         Other axes (cost, latency, ecology) are reduced proportionally.
@@ -358,7 +363,11 @@ class QueryRouter:
         other_sum = float(other.sum())
 
         if other_sum > 1e-9:
-            other = other * (1.0 - actual_delta / other_sum) if other_sum > actual_delta else other * 0.0
+            other = (
+                other * (1.0 - actual_delta / other_sum)
+                if other_sum > actual_delta
+                else other * 0.0
+            )
         w[0] = w_perf + actual_delta
         w[1:] = other
 
@@ -405,7 +414,7 @@ class QueryRouter:
                 model_emb = model_vec / (np.linalg.norm(model_vec) + 1e-10)
 
             # Cosine similarity for performance axis
-            cos_sim = float(np.dot(query_emb[:len(model_emb)], model_emb))
+            cos_sim = float(np.dot(query_emb[: len(model_emb)], model_emb))
             cos_sim = max(0.0, min(1.0, (cos_sim + 1.0) / 2.0))  # map [-1,1] to [0,1]
 
             # Other axes from standard scorer
@@ -413,20 +422,20 @@ class QueryRouter:
             lat_s = self.scorer.latency_score(query_features, model)
             eco_s = self.scorer.ecology_score(query_features, model)
 
-            total = float(
-                w[0] * cos_sim + w[1] * cost_s + w[2] * lat_s + w[3] * eco_s
-            )
+            total = float(w[0] * cos_sim + w[1] * cost_s + w[2] * lat_s + w[3] * eco_s)
 
-            scored.append(ModelScore(
-                model_id=model.model_id,
-                score=total,
-                breakdown={
-                    "performance": cos_sim,
-                    "cost": cost_s,
-                    "latency": lat_s,
-                    "ecology": eco_s,
-                },
-            ))
+            scored.append(
+                ModelScore(
+                    model_id=model.model_id,
+                    score=total,
+                    breakdown={
+                        "performance": cos_sim,
+                        "cost": cost_s,
+                        "latency": lat_s,
+                        "ecology": eco_s,
+                    },
+                )
+            )
 
         scored.sort(key=lambda x: x.score, reverse=True)
         return self._build_response(scored, models)
@@ -495,4 +504,3 @@ class QueryRouter:
             )
             for ms in scored
         ]
-

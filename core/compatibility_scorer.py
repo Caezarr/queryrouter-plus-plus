@@ -173,9 +173,7 @@ class CompatibilityScorer:
         results.sort(key=lambda ms: ms.score, reverse=True)
         return results
 
-    def _performance_score(
-        self, query_features: np.ndarray, model_profile: ModelProfile
-    ) -> float:
+    def _performance_score(self, query_features: np.ndarray, model_profile: ModelProfile) -> float:
         """Compute the performance axis score P(q, m).
 
         Uses task-type signals from query features to weight relevant
@@ -198,9 +196,18 @@ class CompatibilityScorer:
         # of task types that use that benchmark
         bench_weights = np.zeros(len(BENCHMARK_NAMES), dtype=np.float64)
         for task_idx, task_name in enumerate(
-            ["coding", "math", "creative", "factual", "reasoning",
-             "summarization", "translation", "classification",
-             "conversation", "debugging"]
+            [
+                "coding",
+                "math",
+                "creative",
+                "factual",
+                "reasoning",
+                "summarization",
+                "translation",
+                "classification",
+                "conversation",
+                "debugging",
+            ]
         ):
             relevant_benchmarks = TASK_BENCHMARK_MAP.get(task_name, [])
             for bname in relevant_benchmarks:
@@ -219,27 +226,19 @@ class CompatibilityScorer:
         perf = float(np.dot(bench_weights, bench_vec))
         return float(np.clip(perf, 0.0, 1.0))
 
-    def cost_score(
-        self, query_features: np.ndarray, model_profile: ModelProfile
-    ) -> float:
+    def cost_score(self, query_features: np.ndarray, model_profile: ModelProfile) -> float:
         """Public interface for the cost axis score. See ``_cost_score``."""
         return self._cost_score(query_features, model_profile)
 
-    def latency_score(
-        self, query_features: np.ndarray, model_profile: ModelProfile
-    ) -> float:
+    def latency_score(self, query_features: np.ndarray, model_profile: ModelProfile) -> float:
         """Public interface for the latency axis score. See ``_latency_score``."""
         return self._latency_score(query_features, model_profile)
 
-    def ecology_score(
-        self, query_features: np.ndarray, model_profile: ModelProfile
-    ) -> float:
+    def ecology_score(self, query_features: np.ndarray, model_profile: ModelProfile) -> float:
         """Public interface for the ecology axis score. See ``_ecology_score``."""
         return self._ecology_score(query_features, model_profile)
 
-    def _cost_score(
-        self, query_features: np.ndarray, model_profile: ModelProfile
-    ) -> float:
+    def _cost_score(self, query_features: np.ndarray, model_profile: ModelProfile) -> float:
         """Compute the cost axis score K(q, m).
 
         Uses query's expected output length to estimate actual query cost
@@ -255,39 +254,41 @@ class CompatibilityScorer:
         # Extract expected_output_length from query features (index 21)
         # Value is normalized 0-1: 0=short, 0.5=medium, 1=long
         output_length_norm = query_features[21]
-        
+
         # Map to token estimates: short=50, medium=200, long=500
         estimated_output_tokens = 50 + output_length_norm * 450
-        
+
         # Assume fixed input size of 150 tokens (average prompt)
         estimated_input_tokens = 150
-        
+
         # Calculate query-specific cost for this model
         query_cost = (
             model_profile.cost_input_per_1m * estimated_input_tokens / 1_000_000
             + model_profile.cost_output_per_1m * estimated_output_tokens / 1_000_000
         )
-        
+
         # To normalize, calculate what the min/max costs would be for this query
         # across all models (using the fitted per-1M rates scaled to this query's tokens)
         min_query_cost = (
-            self.normalizer.cost_normalizer.min_cost * (estimated_input_tokens + estimated_output_tokens) / 1_000_000
+            self.normalizer.cost_normalizer.min_cost
+            * (estimated_input_tokens + estimated_output_tokens)
+            / 1_000_000
         )
         max_query_cost = (
-            self.normalizer.cost_normalizer.max_cost * (estimated_input_tokens + estimated_output_tokens) / 1_000_000
+            self.normalizer.cost_normalizer.max_cost
+            * (estimated_input_tokens + estimated_output_tokens)
+            / 1_000_000
         )
-        
+
         denom = max_query_cost - min_query_cost
         if denom == 0:
             return 1.0
-        
+
         # Normalize and invert (lower cost = higher score)
         normalized = (query_cost - min_query_cost) / denom
         return float(np.clip(1.0 - normalized, 0.0, 1.0))
 
-    def _latency_score(
-        self, query_features: np.ndarray, model_profile: ModelProfile
-    ) -> float:
+    def _latency_score(self, query_features: np.ndarray, model_profile: ModelProfile) -> float:
         """Compute the latency axis score L(q, m).
 
         Args:
@@ -302,9 +303,7 @@ class CompatibilityScorer:
             return float(np.clip(1.0 - normalized, 0.0, 1.0))
         return 0.5  # Default for unknown latency
 
-    def _ecology_score(
-        self, query_features: np.ndarray, model_profile: ModelProfile
-    ) -> float:
+    def _ecology_score(self, query_features: np.ndarray, model_profile: ModelProfile) -> float:
         """Compute the ecology axis score E(q, m).
 
         Args:
