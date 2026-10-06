@@ -22,7 +22,7 @@ import time
 from typing import Any
 
 import httpx
-from fastapi import APIRouter, HTTPException, Request
+from fastapi import APIRouter, HTTPException
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel, Field
 
@@ -51,6 +51,7 @@ PROVIDER_CONFIG: dict[str, tuple[str, str]] = {
     "Alibaba": ("https://dashscope-intl.aliyuncs.com/compatible-mode/v1", "DASHSCOPE_API_KEY"),
 }
 
+
 # Override base URLs via env vars (e.g. QUERYROUTER_OPENAI_BASE_URL)
 def _get_provider_url(provider: str) -> str:
     env_key = f"QUERYROUTER_{provider.upper()}_BASE_URL"
@@ -66,6 +67,7 @@ def _get_provider_key(provider: str) -> str:
 # ---------------------------------------------------------------------------
 # Request / response schemas (OpenAI-compatible subset)
 # ---------------------------------------------------------------------------
+
 
 class ChatMessage(BaseModel):
     role: str
@@ -93,6 +95,7 @@ class ChatCompletionRequest(BaseModel):
 # Helpers
 # ---------------------------------------------------------------------------
 
+
 def _extract_query(messages: list[ChatMessage]) -> str:
     """Extract the routing query from the last user message."""
     for msg in reversed(messages):
@@ -109,10 +112,10 @@ def _extract_query(messages: list[ChatMessage]) -> str:
 
 def _resolve_mode_and_preference(request: ChatCompletionRequest) -> tuple[PresetConfig, str]:
     """Resolve mode from request and return preset config + preference string.
-    
+
     Supports LibreChat 4-modes preset names (mode-ecologique, mode-performance, etc.)
     as well as legacy preference names.
-    
+
     Returns:
         Tuple of (PresetConfig, preference_string)
     """
@@ -133,15 +136,19 @@ def _resolve_mode_and_preference(request: ChatCompletionRequest) -> tuple[Preset
         pref = str(model_kwargs["routing_preference"])
         preset = resolve_mode(pref)
         return preset, pref
-    
+
     # 3. Parse model name for LibreChat 4-modes preset names or legacy patterns
     model = request.model.lower()
-    
+
     # Check for exact/specific patterns first to avoid false matches
     if "cost_performance" in model or "cost-performance" in model:
         preset = resolve_mode("economique")
         return preset, "cost_performance"
-    if "ecology" in model or "ecologique" in model or (model.startswith("queryrouter-") and "eco" in model):
+    if (
+        "ecology" in model
+        or "ecologique" in model
+        or (model.startswith("queryrouter-") and "eco" in model)
+    ):
         preset = resolve_mode("eco")
         return preset, "ecology"
     if "performance" in model or "perf" in model:
@@ -161,7 +168,7 @@ def _resolve_mode_and_preference(request: ChatCompletionRequest) -> tuple[Preset
 
 def _resolve_preference(request: ChatCompletionRequest) -> str:
     """Resolve routing preference from request.
-    
+
     Wrapper around _resolve_mode_and_preference that returns only the preference string.
     Used by tests and legacy code.
     """
@@ -192,18 +199,19 @@ def _build_upstream_body(
 # Endpoints
 # ---------------------------------------------------------------------------
 
+
 @router.get("/models")
 def list_models() -> dict:
     """OpenAI-compatible model listing.
-    
+
     Returns the 4 LibreChat preset modes instead of actual models,
     for the simplified 4-modes integration.
     """
     from queryrouter.api.presets import list_presets
-    
+
     presets = list_presets()
     now = int(time.time())
-    
+
     # Map preset IDs to LibreChat mode names
     MODE_NAMES = {
         "eco": "mode-ecologique",
@@ -211,23 +219,25 @@ def list_models() -> dict:
         "economique": "mode-economique",
         "equilibre": "mode-equilibre",
     }
-    
+
     data = []
     for preset in presets:
         preset_id = preset["id"]
         mode_name = MODE_NAMES.get(preset_id, f"mode-{preset_id}")
-        data.append({
-            "id": mode_name,
-            "object": "model",
-            "created": now,
-            "owned_by": "queryrouter",
-            "queryrouter": {
-                "name": preset["name"],
-                "description": preset["description"],
-                "icon": preset["icon"],
+        data.append(
+            {
+                "id": mode_name,
+                "object": "model",
+                "created": now,
+                "owned_by": "queryrouter",
+                "queryrouter": {
+                    "name": preset["name"],
+                    "description": preset["description"],
+                    "icon": preset["icon"],
+                },
             }
-        })
-    
+        )
+
     return {
         "object": "list",
         "data": data,
@@ -240,7 +250,7 @@ async def chat_completions(request: ChatCompletionRequest) -> Any:
 
     Accepts standard OpenAI chat format. Routes to the best model based
     on the user's mode/preset, then proxies the request to the provider.
-    
+
     Supports LibreChat 4-modes preset names (mode-ecologique, mode-performance, etc.)
     """
     qr = get_router()
@@ -268,7 +278,7 @@ async def chat_completions(request: ChatCompletionRequest) -> Any:
             "preset_icon": preset.icon,
         },
     )
-    
+
     # Route with preset-specific strategy and cascade threshold
     # BUG FIX: Pass cascade_threshold from preset to router
     router = get_router(preset.strategy, preset.cascade_threshold)
@@ -303,9 +313,16 @@ async def chat_completions(request: ChatCompletionRequest) -> Any:
         # BUG FIX: Pass all metadata to streaming proxy for consistency with non-streaming
         return StreamingResponse(
             _stream_proxy(
-                url, headers, upstream_body, chosen_id, preset, routing_resp,
-                model_profile.name, provider, preference,
-                [{"model_id": s.model_id, "score": s.score} for s in routing_resp.scores[:3]]
+                url,
+                headers,
+                upstream_body,
+                chosen_id,
+                preset,
+                routing_resp,
+                model_profile.name,
+                provider,
+                preference,
+                [{"model_id": s.model_id, "score": s.score} for s in routing_resp.scores[:3]],
             ),
             media_type="text/event-stream",
         )
@@ -326,10 +343,7 @@ async def chat_completions(request: ChatCompletionRequest) -> Any:
             "provider": provider,
             "preference": preference,
             "explanation": routing_resp.explanation,
-            "scores": [
-                {"model_id": s.model_id, "score": s.score}
-                for s in routing_resp.scores[:3]
-            ],
+            "scores": [{"model_id": s.model_id, "score": s.score} for s in routing_resp.scores[:3]],
         }
         return data
 
@@ -347,7 +361,7 @@ async def _stream_proxy(
     scores: list[dict],
 ) -> Any:
     """Stream SSE events from upstream, injecting routing info in the first chunk.
-    
+
     BUG FIX: Includes all metadata fields for consistency with non-streaming response.
     """
     first = True

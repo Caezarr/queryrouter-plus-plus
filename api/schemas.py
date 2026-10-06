@@ -12,10 +12,9 @@ version: 1.0
 
 from __future__ import annotations
 
-from typing import Literal, Optional
+from typing import Literal
 
 from pydantic import BaseModel, Field, model_validator
-
 
 # -- Preset weight vectors for optimize_for modes --
 
@@ -84,16 +83,16 @@ class UserPreferences(BaseModel):
     optimize_for: Literal[
         "performance", "cost", "cost_performance", "ecology", "balanced", "custom"
     ]
-    weights: Optional[dict[str, float]] = Field(
+    weights: dict[str, float] | None = Field(
         default=None,
         description="Weight vector {w_performance, w_cost, w_latency, w_ecology}. Sum must equal 1.",
     )
-    budget_per_query_usd: Optional[float] = Field(
+    budget_per_query_usd: float | None = Field(
         default=None,
         gt=0,
         description="Maximum USD cost per query. Models exceeding this are excluded.",
     )
-    max_latency_ms: Optional[int] = Field(
+    max_latency_ms: int | None = Field(
         default=None,
         gt=0,
         description="Maximum acceptable inference latency in milliseconds.",
@@ -102,17 +101,17 @@ class UserPreferences(BaseModel):
         default=False,
         description="When true, applies a bonus to eco-friendly models.",
     )
-    allowed_models: Optional[list[str]] = Field(
+    allowed_models: list[str] | None = Field(
         default=None,
         description="If set, only these model_ids are considered.",
     )
-    excluded_models: Optional[list[str]] = Field(
+    excluded_models: list[str] | None = Field(
         default=None,
         description="Model_ids to exclude from routing.",
     )
 
     @model_validator(mode="after")
-    def resolve_weights(self) -> "UserPreferences":
+    def resolve_weights(self) -> UserPreferences:
         """Resolve weights from preset or validate custom weights.
 
         For preset modes, auto-assigns the corresponding weight vector.
@@ -134,9 +133,7 @@ class UserPreferences(BaseModel):
                 raise ValueError(f"Missing weight keys: {missing}")
             weight_sum = sum(self.weights[k] for k in WEIGHT_KEYS)
             if abs(weight_sum - 1.0) > 1e-6:
-                raise ValueError(
-                    f"Weights must sum to 1.0, got {weight_sum:.6f}"
-                )
+                raise ValueError(f"Weights must sum to 1.0, got {weight_sum:.6f}")
         else:
             self.weights = PRESET_WEIGHTS[self.optimize_for].copy()
         return self
@@ -204,11 +201,11 @@ class RoutingRequest(BaseModel):
         ...,
         description="User preferences for routing optimization.",
     )
-    tool_context: Optional[ToolContext] = Field(
+    tool_context: ToolContext | None = Field(
         default=None,
         description="Active tool surfaces. Triggers a performance weight boost when set.",
     )
-    context: Optional[dict[str, str]] = Field(
+    context: dict[str, str] | None = Field(
         default=None,
         description="Optional context metadata (conversation_id, domain, etc.).",
     )

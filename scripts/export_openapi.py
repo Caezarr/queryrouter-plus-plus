@@ -33,17 +33,17 @@ def export_openapi(output_dir: Path, formats: list[str] = ["json", "yaml"]) -> N
         formats: List of formats to export ("json", "yaml", or both).
     """
     output_dir.mkdir(parents=True, exist_ok=True)
-    
+
     # Get the OpenAPI schema from FastAPI
     openapi_schema = app.openapi()
-    
+
     # Export JSON
     if "json" in formats:
         json_path = output_dir / "openapi.json"
         with open(json_path, "w") as f:
             json.dump(openapi_schema, f, indent=2)
         print(f"✓ Exported OpenAPI schema to {json_path}")
-    
+
     # Export YAML
     if "yaml" in formats and yaml is not None:
         yaml_path = output_dir / "openapi.yaml"
@@ -58,7 +58,7 @@ def main() -> None:
     """CLI entry point."""
     repo_root = Path(__file__).parent.parent
     docs_dir = repo_root / "docs"
-    
+
     export_openapi(docs_dir, formats=["json", "yaml"])
 
 

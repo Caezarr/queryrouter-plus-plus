@@ -18,7 +18,7 @@ import yaml
 @dataclass
 class PresetConfig:
     """Configuration for a single preset/mode.
-    
+
     Attributes:
         name: Display name for the preset.
         description: Human-readable description.
@@ -28,6 +28,7 @@ class PresetConfig:
         strategy: Routing strategy.
         cascade_threshold: Threshold for cascade strategy.
     """
+
     name: str
     description: str
     icon: str = ""
@@ -49,10 +50,10 @@ class PresetConfig:
 
 class PresetManager:
     """Manages preset configurations from YAML file.
-    
+
     Loads presets from config/presets.yaml and provides lookup by preset ID.
     Maps LibreChat mode names to preset configurations.
-    
+
     Attributes:
         presets: Mapping of preset_id to PresetConfig.
         config_path: Path to the presets YAML file.
@@ -78,13 +79,13 @@ class PresetManager:
 
     def __init__(self, config_path: Path | None = None) -> None:
         """Initialize the preset manager.
-        
+
         Args:
             config_path: Path to presets.yaml. If None, uses default location.
         """
         if config_path is None:
             config_path = Path(__file__).resolve().parents[1] / "config" / "presets.yaml"
-        
+
         self.config_path = config_path
         self.presets: dict[str, PresetConfig] = {}
         self._load_presets()
@@ -99,7 +100,7 @@ class PresetManager:
         try:
             with open(self.config_path, encoding="utf-8") as f:
                 data = yaml.safe_load(f)
-            
+
             presets_data = data.get("presets", {})
             for preset_id, config in presets_data.items():
                 self.presets[preset_id] = PresetConfig(
@@ -176,10 +177,10 @@ class PresetManager:
 
     def get_preset(self, preset_id: str) -> PresetConfig | None:
         """Get a preset by its ID.
-        
+
         Args:
             preset_id: The preset identifier (e.g., "eco", "performance").
-            
+
         Returns:
             PresetConfig or None if not found.
         """
@@ -187,20 +188,22 @@ class PresetManager:
 
     def resolve_mode(self, mode_name: str) -> PresetConfig:
         """Resolve a LibreChat mode name to a preset config.
-        
+
         Args:
             mode_name: The mode/model name from LibreChat (e.g., "mode-ecologique").
-            
+
         Returns:
             PresetConfig for the resolved preset, or default (equilibre) if unknown.
         """
         mode_lower = mode_name.lower()
         preset_id = self.MODE_TO_PRESET.get(mode_lower, "equilibre")
-        return self.presets.get(preset_id, self.presets.get("equilibre", list(self.presets.values())[0]))
+        return self.presets.get(
+            preset_id, self.presets.get("equilibre", list(self.presets.values())[0])
+        )
 
     def list_presets(self) -> list[dict]:
         """List all available presets with their metadata.
-        
+
         Returns:
             List of preset metadata dicts.
         """

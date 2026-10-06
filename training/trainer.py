@@ -171,12 +171,17 @@ class RouterTrainer:
 
     _DEFAULTS: dict[str, dict[str, Any]] = {
         "xgboost": {
-            "n_estimators": 100, "max_depth": 6, "learning_rate": 0.1,
-            "subsample": 0.8, "colsample_bytree": 0.8,
+            "n_estimators": 100,
+            "max_depth": 6,
+            "learning_rate": 0.1,
+            "subsample": 0.8,
+            "colsample_bytree": 0.8,
         },
         "random_forest": {
-            "n_estimators": 100, "max_depth": 10,
-            "min_samples_split": 2, "min_samples_leaf": 1,
+            "n_estimators": 100,
+            "max_depth": 10,
+            "min_samples_split": 2,
+            "min_samples_leaf": 1,
         },
         "logistic": {"C": 1.0, "max_iter": 500},
     }
@@ -191,16 +196,12 @@ class RouterTrainer:
                 params[key] = trial.suggest_float(key, spec[1], spec[2], log=spec[3])
         return params
 
-    def _create_model(
-        self, trial: Any, method: str, n_classes: int
-    ) -> Any:
+    def _create_model(self, trial: Any, method: str, n_classes: int) -> Any:
         """Create a model with Optuna-suggested hyperparameters."""
         params = self._suggest_params(trial, method)
         return self._build_model(params, method, n_classes)
 
-    def _build_model(
-        self, params: dict[str, Any], method: str, n_classes: int
-    ) -> Any:
+    def _build_model(self, params: dict[str, Any], method: str, n_classes: int) -> Any:
         """Build a classifier from a parameter dict.
 
         Args:

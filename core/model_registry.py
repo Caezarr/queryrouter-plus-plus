@@ -14,7 +14,8 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from queryrouter.data.loaders import ModelProfile, ModelRegistry as _BaseRegistry
+from queryrouter.data.loaders import ModelProfile
+from queryrouter.data.loaders import ModelRegistry as _BaseRegistry
 
 
 class ModelRegistry:

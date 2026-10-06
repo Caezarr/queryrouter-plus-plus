@@ -14,8 +14,6 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 
-import numpy as np
-
 from queryrouter.api.schemas import RoutingRequest, UserPreferences
 from queryrouter.core.router import QueryRouter
 
@@ -148,9 +146,7 @@ class RouterEvaluator:
 
         n = max(len(test_set), 1)
         co2_saved = (
-            (best_model_co2 - router_co2) / best_model_co2 * 100.0
-            if best_model_co2 > 0
-            else 0.0
+            (best_model_co2 - router_co2) / best_model_co2 * 100.0 if best_model_co2 > 0 else 0.0
         )
 
         # Pareto efficiency: check if selected models are Pareto-optimal
