@@ -13,6 +13,14 @@ All notable changes to QueryRouter++ are documented here.
   profiles, replacing HellaSWAG and ARC-C for more granular reasoning capability assessment.
 - **Data provenance tracking**: `data_models/CHANGELOG.md` now documents benchmark data collection
   dates and sources for the 12-model pool.
+- **Comprehensive inference CO₂ estimates**: All 12 models now have `inference_co2_per_1m_tokens_grams`
+  values using four documented methods: provider disclosure (DeepSeek), energy-to-CO2 conversion
+  (Gemini), MoE active-parameter scaling (LLaMA 4, Qwen3, Mistral Large 3), and cost-based proxy
+  (Claude, GPT, o3). Eco axis now spans 59x range (1.1g–65.0g), making `w_ecology` weights
+  meaningful for green routing. Closes #13.
+- **Eco axis test coverage**: Added `test_eco_ranking_differentiates_models` (unit) and
+  `TestProductionEcoData` (integration) test suites verifying all models have CO₂ data and
+  eco scores differentiate ≥5 unique values with ≥0.5 score range.
 
 ### Changed
 - **Cost scaling by expected output length**: `CompatibilityScorer` now scales cost by
