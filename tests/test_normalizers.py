@@ -157,6 +157,54 @@ class TestEcoNormalizer:
         with pytest.raises(RuntimeError):
             en.transform(_profiles()[0])
 
+    def test_eco_ranking_differentiates_models(self) -> None:
+        """Test that eco scores differentiate models across CO2 range."""
+        profiles = [
+            ModelProfile(
+                model_id="gemini-flash",
+                name="Gemini Flash",
+                provider="Google",
+                inference_co2_per_1m_grams=1.1,
+            ),
+            ModelProfile(
+                model_id="claude-haiku",
+                name="Claude Haiku",
+                provider="Anthropic",
+                inference_co2_per_1m_grams=7.0,
+            ),
+            ModelProfile(
+                model_id="llama-4",
+                name="LLaMA 4",
+                provider="Meta",
+                inference_co2_per_1m_grams=13.8,
+            ),
+            ModelProfile(
+                model_id="deepseek-v3",
+                name="DeepSeek V3",
+                provider="DeepSeek",
+                inference_co2_per_1m_grams=30.0,
+            ),
+            ModelProfile(
+                model_id="o3",
+                name="OpenAI o3",
+                provider="OpenAI",
+                inference_co2_per_1m_grams=65.0,
+            ),
+        ]
+        en = EcoNormalizer()
+        en.fit(profiles)
+        
+        scores = [en.transform(p) for p in profiles]
+        
+        # Lowest CO2 should score highest (1.0)
+        assert scores[0] == pytest.approx(1.0)
+        # Highest CO2 should score lowest (0.0)
+        assert scores[-1] == pytest.approx(0.0)
+        # Intermediate scores should be strictly decreasing
+        assert scores[0] > scores[1] > scores[2] > scores[3] > scores[4]
+        # All scores should be in [0, 1]
+        assert all(0.0 <= s <= 1.0 for s in scores)
+
 
 class TestFeatureNormalizer:
     def test_transform_shape(self) -> None:
