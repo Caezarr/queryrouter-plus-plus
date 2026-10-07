@@ -193,9 +193,9 @@ class TestEcoNormalizer:
         ]
         en = EcoNormalizer()
         en.fit(profiles)
-        
+
         scores = [en.transform(p) for p in profiles]
-        
+
         # Lowest CO2 should score highest (1.0)
         assert scores[0] == pytest.approx(1.0)
         # Highest CO2 should score lowest (0.0)
