@@ -188,3 +188,67 @@ class TestModelRegistry:
         profile = registry.get("m1")
         assert "mmlu" in profile.benchmarks
         assert "humaneval" not in profile.benchmarks
+
+
+class TestProductionEcoData:
+    """Tests that verify production ecological data meets requirements for issue #13."""
+
+    def test_all_models_have_co2_data(self) -> None:
+        """Verify all 12 models have inference CO2 estimates (issue #13)."""
+        data_dir = Path(__file__).parent.parent / "data_models"
+        registry = ModelRegistry(data_dir)
+
+        # All models should have CO2 data
+        models_without_co2 = []
+        for model_id in registry.list_model_ids():
+            profile = registry.get(model_id)
+            if profile.inference_co2_per_1m_grams is None:
+                models_without_co2.append(model_id)
+
+        assert len(models_without_co2) == 0, (
+            f"Models without CO2 data: {models_without_co2}. "
+            "All models must have inference_co2_per_1m_grams for eco axis to work."
+        )
+
+    def test_eco_axis_differentiates_models(self) -> None:
+        """Verify eco scores differentiate models across the pool (issue #13)."""
+        from queryrouter.data.normalizers import EcoNormalizer
+
+        data_dir = Path(__file__).parent.parent / "data_models"
+        registry = ModelRegistry(data_dir)
+        profiles = [registry.get(mid) for mid in registry.list_model_ids()]
+
+        # Fit the eco normalizer
+        en = EcoNormalizer()
+        en.fit(profiles)
+
+        # Get all eco scores
+        eco_scores = {p.model_id: en.transform(p) for p in profiles}
+
+        # Should have at least 12 models
+        assert len(eco_scores) >= 12
+
+        # Scores should span a meaningful range (not all the same)
+        unique_scores = len(set(eco_scores.values()))
+        assert unique_scores >= 5, (
+            f"Eco axis only produces {unique_scores} unique scores across "
+            f"{len(eco_scores)} models. Need more differentiation."
+        )
+
+        # Min and max should be well separated (at least 0.5 range)
+        score_range = max(eco_scores.values()) - min(eco_scores.values())
+        assert score_range >= 0.5, (
+            f"Eco score range is only {score_range:.2f}. "
+            f"Need at least 0.5 for meaningful differentiation."
+        )
+
+        # Verify some expected relationships based on CO2 values
+        # Gemini Flash (1.1g) should score highest
+        # o3 (65.0g) should score lowest or near-lowest
+        gemini_flash = eco_scores.get("gemini-2-5-flash")
+        o3_score = eco_scores.get("o3")
+
+        if gemini_flash is not None and o3_score is not None:
+            assert gemini_flash > o3_score, (
+                "Gemini Flash (1.1g CO2) should score higher than o3 (65.0g CO2)"
+            )
