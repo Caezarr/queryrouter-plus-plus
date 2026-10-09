@@ -21,6 +21,9 @@ All notable changes to QueryRouter++ are documented here.
 - **Eco axis test coverage**: Added `test_eco_ranking_differentiates_models` (unit) and
   `TestProductionEcoData` (integration) test suites verifying all models have CO₂ data and
   eco scores differentiate ≥5 unique values with ≥0.5 score range.
+- **Eco-axis routing recipe**: `docs/ECO_RECIPE.md` provides copy-pasteable examples showing
+  default (balanced) vs ecology-heavy weight configurations. Demonstrates how Gemini Flash (1.1g CO₂)
+  beats heavy proprietary models (o3 at 65.0g CO₂) with confidence tags noted. Closes #46.
 
 ### Changed
 - **Cost scaling by expected output length**: `CompatibilityScorer` now scales cost by
