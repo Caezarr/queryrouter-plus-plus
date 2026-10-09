@@ -133,7 +133,9 @@ def _latency_score(self, query_features, model_profile):
 2. **Normalization** — Min-max normalized across the model pool, then **inverted**.
 3. **Data confidence** — Ecological data is LOW confidence for 9/12 models; sourced data with references is high-value (see [CONTRIBUTING.md](../CONTRIBUTING.md)).
 
-**Current range:** CO₂ estimates span from 15g/MTok (Gemini Flash) to 240g/MTok (Claude Opus 4.6).
+**Current range:** CO₂ estimates span from 1.1g/MTok (Gemini Flash) to 65.0g/MTok (o3 reasoning).
+
+**Worked examples:** See [ECO_RECIPE.md](ECO_RECIPE.md) for copy-pasteable examples showing default vs ecology-heavy weights with confidence tags and CHANGELOG links.
 
 **Code reference:**
 ```python
