@@ -98,8 +98,10 @@ request = RoutingRequest(
     preferences=UserPreferences(optimize_for="ecology"),
 )
 result = router.route(request)
-# → "gemini-2-5-flash"  (15g CO₂/MTok, 87.5% less than always-best)
+# → "gemini-2-5-flash"  (1.1g CO₂/1M tokens, 87.5% less than always-best)
 ```
+
+**See also:** [`docs/ECO_RECIPE.md`](docs/ECO_RECIPE.md) — Copy-pasteable examples showing how ecology weights prevent heavy models (65g CO₂) in favor of efficient ones (1.1g CO₂). Includes confidence tags and links to the [#45 CO₂ data fill](CHANGELOG.md#unreleased).
 
 ### Custom weight vector
 
