@@ -223,6 +223,8 @@ All documentation is organized under `docs/` for operator and contributor discov
 
 **[⚖️ Scoring System Reference](docs/SCORING.md)** — Complete guide to multi-criteria scoring: the four axes, weight presets, tool-aware routing, custom tuning, and safe configuration practices
 
+**[🤖 llms.txt](llms.txt)** — Machine-readable project summary for AI crawlers and agent context
+
 ---
 
 ## Server & Demo
