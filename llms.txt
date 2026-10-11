@@ -1,0 +1,63 @@
+# QueryRouter++
+
+Multi-criteria LLM routing framework that selects the optimal model for each query using a formalized compatibility function C(q, m, w) scored across four axes: performance, cost, latency, and ecological impact.
+
+## Stack
+
+- Python 3.11+
+- FastAPI for API server
+- Poetry for dependency management
+- Pydantic for data validation
+
+## Key Directories
+
+- `queryrouter/` — Core routing logic and API implementation
+- `core/` — Compatibility scoring engine and router strategies
+- `api/` — FastAPI endpoints and schemas
+- `data/` — Model benchmark matrices (performance, cost, latency, ecology)
+- `config/` — Preference schemas and presets
+- `docs/` — Full documentation (quickstart, scoring reference, LibreChat integration)
+- `tests/` — Test suite (pytest, ≥80% coverage required)
+- `notebooks/` — Evaluation and exploration notebooks
+- `scripts/` — Utility scripts (OpenAPI export, data validation)
+
+## Running Locally
+
+```bash
+# Install dependencies
+pip install poetry
+poetry install
+
+# Start API server (port 8000)
+poetry run uvicorn queryrouter.api.main:app --reload
+
+# Run tests
+poetry run pytest
+
+# Linting & formatting
+poetry run ruff check .
+poetry run black --check .
+```
+
+Interactive API docs available at http://localhost:8000/docs after starting the server.
+
+## Documentation
+
+- README: https://github.com/Caezarr/queryrouter-plus-plus/blob/main/README.md
+- Security Policy: https://github.com/Caezarr/queryrouter-plus-plus/blob/main/SECURITY.md
+- Support: https://github.com/Caezarr/queryrouter-plus-plus/blob/main/SUPPORT.md
+- Contributing: https://github.com/Caezarr/queryrouter-plus-plus/blob/main/CONTRIBUTING.md
+- Quickstart Guide: https://github.com/Caezarr/queryrouter-plus-plus/blob/main/docs/QUICKSTART.md
+- Scoring System: https://github.com/Caezarr/queryrouter-plus-plus/blob/main/docs/SCORING.md
+- Documentation Index: https://github.com/Caezarr/queryrouter-plus-plus/blob/main/docs/INDEX.md
+
+## Project Stats
+
+- 12 supported models across 5 providers (Claude, GPT, Gemini, Mistral, LLaMA, Qwen, DeepSeek)
+- Achieves 100% accuracy vs oracle in direct routing mode
+- 91.8% cost savings vs always-best baseline
+- 87.5% CO₂ reduction in ecology mode with only -0.6% performance impact
+
+## License
+
+MIT License — see LICENSE file
