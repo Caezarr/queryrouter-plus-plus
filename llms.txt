@@ -14,7 +14,8 @@ Multi-criteria LLM routing framework that selects the optimal model for each que
 - `queryrouter/` — Core routing logic and API implementation
 - `core/` — Compatibility scoring engine and router strategies
 - `api/` — FastAPI endpoints and schemas
-- `data/` — Model benchmark matrices (performance, cost, latency, ecology)
+- `data/` — Data loaders and normalizers for the model matrices
+- `data_models/` — Model benchmark matrices (performance, cost, ecology CSVs + query taxonomy)
 - `config/` — Preference schemas and presets
 - `docs/` — Full documentation (quickstart, scoring reference, LibreChat integration)
 - `tests/` — Test suite (pytest, ≥80% coverage required)
@@ -53,7 +54,7 @@ Interactive API docs available at http://localhost:8000/docs after starting the 
 
 ## Project Stats
 
-- 12 supported models across 5 providers (Claude, GPT, Gemini, Mistral, LLaMA, Qwen, DeepSeek)
+- 12 supported models across 7 providers: Anthropic (Claude), OpenAI (GPT-4.1, o3), Google (Gemini), Mistral AI, Meta (LLaMA), Alibaba (Qwen), DeepSeek — source: `data_models/models_benchmark_matrix.csv`
 - Achieves 100% accuracy vs oracle in direct routing mode
 - 91.8% cost savings vs always-best baseline
 - 87.5% CO₂ reduction in ecology mode with only -0.6% performance impact
