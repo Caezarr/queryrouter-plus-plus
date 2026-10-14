@@ -315,7 +315,7 @@ docker run -p 8000:8000 queryrouter
 
 ## Model Support
 
-QueryRouter++ ships with profiles for **12 models** across 5 providers (March 2026 data):
+QueryRouter++ ships with profiles for **12 models** across 7 providers (March 2026 data):
 
 | Model | Provider | MMLU | HumanEval | MATH | Input $/MTok | Output $/MTok | Context |
 |-------|----------|------|-----------|------|-------------|--------------|---------|
@@ -334,7 +334,7 @@ QueryRouter++ ships with profiles for **12 models** across 5 providers (March 20
 
 † *o3 effective output cost = $64.00/MTok for math/reasoning queries (8× reasoning token multiplier).*
 
-**Adding a model** — open `data/models_benchmark_matrix.csv`, `data/models_cost_matrix.csv`, and `data/models_eco_matrix.csv` and add a row. See [CONTRIBUTING.md](CONTRIBUTING.md) for the data quality policy.
+**Adding a model** — open `data_models/models_benchmark_matrix.csv`, `data_models/models_cost_matrix.csv`, and `data_models/models_eco_matrix.csv` and add a row. See [CONTRIBUTING.md](CONTRIBUTING.md) for the data quality policy.
 
 ---
 
@@ -358,7 +358,7 @@ Three failure modes this creates:
 
 ## Evaluation
 
-All results are from a simulation over **200 synthetic queries × 12 models × 5 preference presets** (seed=42). No API calls were made — scores are computed from benchmark data to ensure reproducibility.
+All results are from a simulation over **200 synthetic queries × 12 models × 5 preference presets** (seed=42). No API calls were made — scores are computed from benchmark data to ensure reproducibility. "Accuracy vs oracle" compares each router to the all-model scorer (`training/evaluator.py`); direct routing *is* that scorer, so its 100% is by construction and checks correctness, not real-world answer quality.
 
 ### Strategy comparison (balanced preferences)
 
@@ -507,7 +507,7 @@ Full schema lives at [`config/preferences_schema.json`](config/preferences_schem
 
 Contributions welcome. The most impactful areas right now:
 
-- **New model profiles** — add rows to `data/models_*.csv` as new models are released
+- **New model profiles** — add rows to `data_models/models_*.csv` as new models are released
 - **Ecological data** — CO₂ estimates are LOW confidence for 9/12 models; sourced data with references is very valuable
 - **Real-world validation** — if you deploy QueryRouter++ in production, sharing routing logs (anonymized) helps validate the simulation results
 
