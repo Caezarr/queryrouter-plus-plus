@@ -55,9 +55,12 @@ Interactive API docs available at http://localhost:8000/docs after starting the 
 ## Project Stats
 
 - 12 supported models across 7 providers: Anthropic (Claude), OpenAI (GPT-4.1, o3), Google (Gemini), Mistral AI, Meta (LLaMA), Alibaba (Qwen), DeepSeek — source: `data_models/models_benchmark_matrix.csv`
-- Achieves 100% accuracy vs oracle in direct routing mode
-- 91.8% cost savings vs always-best baseline
-- 87.5% CO₂ reduction in ecology mode with only -0.6% performance impact
+
+Evaluation figures below come from an offline simulation, not production traffic: 200 synthetic queries × 12 models × 5 preference presets (seed=42), scored from the benchmark data in `data_models/` with no API calls. Method and full tables: README "Evaluation" section (https://github.com/Caezarr/queryrouter-plus-plus/blob/main/README.md#evaluation), evaluator in `training/evaluator.py`, analysis in `notebooks/exploration.ipynb`.
+
+- Direct routing matches the oracle on 100% of the 200 simulated queries. This holds by construction: the oracle is the same all-model scorer that direct mode uses, so it measures implementation correctness, not real-world answer quality.
+- 91.8% estimated cost savings vs always routing to the strongest model (balanced preset, same simulation).
+- 87.5% estimated CO₂ reduction vs always-best in ecology mode (2.6M g vs 20.9M g over the 200 queries), with a −0.6% drop in the benchmark-derived performance score.
 
 ## License
 
