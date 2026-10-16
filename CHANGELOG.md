@@ -26,6 +26,11 @@ All notable changes to QueryRouter++ are documented here.
   beats heavy proprietary models (o3 at 65.0g CO₂) with confidence tags noted. Closes #46.
 
 ### Changed
+- **Web stack (gate #31)**: FastAPI allowed range now includes 0.143.x, with an explicit
+  `starlette>=1.6,<2` floor and uvicorn still in `>=0.34,<0.55` (resolves to FastAPI 0.143.2,
+  Starlette 1.8.0, uvicorn 0.54.0). No QueryRouter++ middleware or lifespan API changes were
+  required; `/v1/chat/completions` routing is unchanged. FastAPI 0.142+ pulls `opentelemetry-api`
+  as a required dependency; automatic exporter setup stays opt-in as of FastAPI 0.143.
 - **Cost scaling by expected output length**: `CompatibilityScorer` now scales cost by
   `query.expected_output_length` rather than a fixed 1000-token constant. Short-output queries
   (translations, classifications) now show accurate per-query cost estimates.
@@ -36,6 +41,9 @@ All notable changes to QueryRouter++ are documented here.
   evaluation.
 
 ### Fixed
+- Starlette advisories PYSEC-2026-161, PYSEC-2026-248, PYSEC-2026-249, PYSEC-2026-1941,
+  PYSEC-2026-1942, PYSEC-2026-2280, and PYSEC-2026-2281 are resolved by Starlette 1.6+;
+  they are no longer ignored in the pip-audit CI job.
 - Test suite expanded: added assertions for nonzero latency scores, GPQA-weighted task routing,
   and cost scaling behavior for long vs short queries.
 

@@ -14,7 +14,8 @@ packages = [{include = "queryrouter", from = "."}]
 
 [tool.poetry.dependencies]
 python = "^3.11"
-fastapi = ">=0.115,<0.142"
+fastapi = ">=0.115,<0.144"
+starlette = ">=1.6,<2"
 uvicorn = {extras = ["standard"], version = ">=0.34,<0.55"}
 pydantic = "^2.0"
 sentence-transformers = ">=3,<7"
