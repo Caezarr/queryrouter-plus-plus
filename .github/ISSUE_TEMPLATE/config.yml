@@ -1,0 +1,8 @@
+blank_issues_enabled: true
+contact_links:
+  - name: Security vulnerability
+    url: https://github.com/Caezarr/queryrouter-plus-plus/security/advisories/new
+    about: Report security issues (API keys, routing bypass, prompt leaks) privately, not in a public issue.
+  - name: Quickstart and troubleshooting
+    url: https://github.com/Caezarr/queryrouter-plus-plus/blob/main/docs/TROUBLESHOOTING.md
+    about: Setup, provider keys and common routing errors are covered here before opening a bug.
