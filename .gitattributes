@@ -1,0 +1,17 @@
+# Normalize line endings for everyone (macOS, Linux, Docker builds).
+* text=auto
+
+# Python and config must stay LF so the Docker image and CI behave the same as local.
+*.py text eol=lf
+*.toml text eol=lf
+*.yml text eol=lf
+*.yaml text eol=lf
+Dockerfile text eol=lf
+
+# Model matrices are data: keep LF, diff them as CSV.
+*.csv text eol=lf diff=csv
+
+# Exploration notebook and generated OpenAPI spec: keep them out of language stats.
+*.ipynb linguist-documentation=true
+docs/openapi.json linguist-generated=true
+docs/openapi.yaml linguist-generated=true
