@@ -39,6 +39,8 @@ Provider API keys (OpenAI, Anthropic, etc.) are only needed if you use the `/v1/
 poetry run uvicorn queryrouter.api.main:app --reload
 ```
 
+Without auto-reload, `poetry run queryrouter` starts the same app on `QUERYROUTER_HOST`:`QUERYROUTER_PORT` (default `127.0.0.1:8000`).
+
 Server starts at [http://localhost:8000](http://localhost:8000)
 
 ## Your first route
