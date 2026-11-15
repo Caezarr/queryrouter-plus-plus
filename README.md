@@ -235,6 +235,12 @@ All documentation is organized under `docs/` for operator and contributor discov
 poetry run uvicorn queryrouter.api.main:app --reload --port 8000
 ```
 
+Or use the bundled script, which reads `QUERYROUTER_HOST` / `QUERYROUTER_PORT` (default `127.0.0.1:8000`):
+
+```bash
+poetry run queryrouter
+```
+
 Interactive docs available at [http://localhost:8000/docs](http://localhost:8000/docs).
 
 ### Route a query via HTTP

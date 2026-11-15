@@ -37,7 +37,7 @@ black = "^26.3.1"
 mypy = ">=1.13,<3.0"
 
 [tool.poetry.scripts]
-queryrouter = "queryrouter.api.main:app"
+queryrouter = "queryrouter.api.main:main"
 
 [tool.ruff]
 line-length = 100

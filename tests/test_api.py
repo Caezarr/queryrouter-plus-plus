@@ -9,8 +9,10 @@ date: 2026-03-24
 version: 1.0
 """
 
+import pytest
 from fastapi.testclient import TestClient
 
+import queryrouter.api.main as api_main
 from queryrouter.api.main import app
 
 client = TestClient(app)
@@ -211,3 +213,30 @@ class TestExplainEndpoint:
             mid in explanation
             for mid in ["gpt", "claude", "gemini", "deepseek", "llama", "qwen", "mistral"]
         )
+
+
+class TestEntrypoint:
+    """Tests for the ``queryrouter`` console script (api.main.main)."""
+
+    def _capture_run(self, monkeypatch: pytest.MonkeyPatch) -> dict[str, object]:
+        calls: dict[str, object] = {}
+
+        def fake_run(app_obj: object, host: str, port: int) -> None:
+            calls.update(app=app_obj, host=host, port=port)
+
+        monkeypatch.setattr(api_main.uvicorn, "run", fake_run)
+        return calls
+
+    def test_main_defaults_to_localhost(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        monkeypatch.delenv("QUERYROUTER_HOST", raising=False)
+        monkeypatch.delenv("QUERYROUTER_PORT", raising=False)
+        calls = self._capture_run(monkeypatch)
+        api_main.main()
+        assert calls == {"app": app, "host": "127.0.0.1", "port": 8000}
+
+    def test_main_reads_host_and_port_from_env(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        monkeypatch.setenv("QUERYROUTER_HOST", "0.0.0.0")
+        monkeypatch.setenv("QUERYROUTER_PORT", "9001")
+        calls = self._capture_run(monkeypatch)
+        api_main.main()
+        assert calls == {"app": app, "host": "0.0.0.0", "port": 9001}
