@@ -12,6 +12,9 @@ version: 1.0
 
 from __future__ import annotations
 
+import os
+
+import uvicorn
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 
@@ -118,3 +121,14 @@ def explain_routing(request: RoutingRequest) -> dict[str, str]:
         return {"explanation": explanation}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e)) from e
+
+
+def main() -> None:
+    """Run the API with uvicorn (entry point of the ``queryrouter`` script).
+
+    Host and port are read from ``QUERYROUTER_HOST`` and ``QUERYROUTER_PORT``
+    (see ``.env.example``), defaulting to ``127.0.0.1:8000``.
+    """
+    host = os.getenv("QUERYROUTER_HOST", "127.0.0.1")
+    port = int(os.getenv("QUERYROUTER_PORT", "8000"))
+    uvicorn.run(app, host=host, port=port)
