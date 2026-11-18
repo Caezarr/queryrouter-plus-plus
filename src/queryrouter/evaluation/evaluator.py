@@ -3,11 +3,8 @@
 
 """Router evaluation module for QueryRouter++.
 
-description: Evaluate routing quality with metrics like accuracy vs oracle,
-    average cost, CO2 savings, and Pareto efficiency.
-agent: coder
-date: 2026-03-24
-version: 1.0
+Evaluate routing quality with metrics like accuracy vs oracle,
+average cost, CO2 savings, and Pareto efficiency.
 """
 
 from __future__ import annotations
