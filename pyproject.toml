@@ -38,6 +38,7 @@ optional = true
 [tool.poetry.group.notebook.dependencies]
 pandas = ">=2.2,<4.0"
 matplotlib = "^3.9"
+seaborn = "^0.13"
 
 [tool.poetry.scripts]
 queryrouter = "queryrouter.api.main:main"
