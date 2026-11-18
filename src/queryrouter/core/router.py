@@ -3,17 +3,14 @@
 
 """Main routing engine for QueryRouter++.
 
-description: QueryRouter class implementing direct, cascade, and embedding-based
-    routing strategies for multi-criteria LLM selection.
-agent: coder
-date: 2026-03-24
-version: 1.0
+QueryRouter class implementing direct, cascade, and embedding-based
+routing strategies for multi-criteria LLM selection.
 """
 
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Literal
+from typing import Literal, get_args
 
 import numpy as np
 
@@ -39,6 +36,7 @@ from queryrouter.data.normalizers import FeatureNormalizer
 from queryrouter.data.utils import estimate_query_cost
 
 Strategy = Literal["direct", "cascade", "embedding"]
+STRATEGIES: tuple[Strategy, ...] = get_args(Strategy)
 
 
 class QueryRouter:
@@ -490,7 +488,7 @@ class QueryRouter:
             estimated_latency_ms=best_model.latency_ms or 0 if best_model else 0,
         )
 
-    def _convert_scores(self, scored: list) -> list[APIModelScore]:
+    def _convert_scores(self, scored: list[ModelScore]) -> list[APIModelScore]:
         """Convert internal ModelScore objects to API schema.
 
         Args:

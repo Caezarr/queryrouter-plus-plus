@@ -3,10 +3,7 @@
 
 """API endpoint tests for QueryRouter++.
 
-description: Tests for FastAPI endpoints using TestClient.
-agent: coder
-date: 2026-03-24
-version: 1.0
+Tests for FastAPI endpoints using TestClient.
 """
 
 import pytest
@@ -181,6 +178,32 @@ class TestRouteEndpoint:
         # The specific models may differ based on data, but both should succeed
         assert model_no_tools != ""
         assert model_with_tools != ""
+
+
+class TestStrategySelection:
+    """Tests for context["strategy"] handling on /route."""
+
+    @pytest.mark.parametrize("strategy", ["direct", "cascade", "embedding"])
+    def test_known_strategy_is_used(self, strategy: str) -> None:
+        payload = {
+            "query": "Prove that sqrt(2) is irrational.",
+            "preferences": {"optimize_for": "balanced"},
+            "context": {"strategy": strategy},
+        }
+        response = client.post("/route", json=payload)
+        assert response.status_code == 200
+        assert response.json()["explanation"].lower().startswith(strategy)
+
+    def test_unknown_strategy_falls_back_to_direct(self) -> None:
+        payload = {
+            "query": "Prove that sqrt(2) is irrational.",
+            "preferences": {"optimize_for": "balanced"},
+        }
+        direct = client.post("/route", json=payload).json()
+        payload["context"] = {"strategy": "not-a-strategy"}
+        unknown = client.post("/route", json=payload).json()
+        assert unknown["recommended_model"] == direct["recommended_model"]
+        assert unknown["explanation"] == direct["explanation"]
 
 
 class TestExplainEndpoint:
