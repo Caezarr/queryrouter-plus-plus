@@ -4,10 +4,7 @@
 
 """Export OpenAPI 3 schema from the FastAPI application.
 
-description: Generates openapi.json and openapi.yaml from the FastAPI app.
-agent: coder
-date: 2026-10-05
-version: 1.0
+Generates openapi.json and openapi.yaml from the FastAPI app.
 """
 
 import json
@@ -25,7 +22,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 from queryrouter.api.main import app
 
 
-def export_openapi(output_dir: Path, formats: list[str] = ["json", "yaml"]) -> None:
+def export_openapi(output_dir: Path, formats: tuple[str, ...] = ("json", "yaml")) -> None:
     """Export OpenAPI schema to specified formats.
 
     Args:

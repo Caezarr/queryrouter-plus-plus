@@ -1,22 +1,14 @@
 # MIT License
 # Copyright (c) 2026 QueryRouter++ Team
 
-"""QueryRouter++ core package.
+"""QueryRouter++: multi-criteria LLM routing.
 
-description: Package init with version and main class exports.
-agent: coder
-date: 2026-03-23
-version: 1.0
-
-This package implements the core routing logic for multi-criteria
-LLM query routing based on formalized query-model compatibility.
-
-Key components:
-    - QueryFeaturizer: Extract feature vectors phi(q) from raw queries
-    - ModelRegistry: Database of model profiles with characteristics psi(m)
-    - CompatibilityScorer: Compute S(q, m, w) = sum_i w_i * f_i(q, m)
-    - PreferenceEngine: Manage and resolve user preference weights
-    - Router: Decision engine selecting argmax_m S(q, m, w)
+Public entry points:
+    - QueryFeaturizer: extract the feature vector phi(q) from a raw query
+    - ModelRegistry: model profiles psi(m) loaded from the data_models/ CSVs
+    - CompatibilityScorer: C(q, m, w) = sum_i w_i * A_i(q, m)
+    - PreferenceEngine: resolve user preferences into weights and hard filters
+    - QueryRouter: pick a model with the direct, cascade or embedding strategy
 """
 
 __version__ = "0.2.0"

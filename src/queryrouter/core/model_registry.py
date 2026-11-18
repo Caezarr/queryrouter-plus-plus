@@ -3,11 +3,8 @@
 
 """Model registry for QueryRouter++.
 
-description: High-level ModelRegistry that wraps data loaders and provides
-    filtering, lookup, and listing operations on ModelProfile objects.
-agent: coder
-date: 2026-03-24
-version: 1.0
+High-level ModelRegistry that wraps data loaders and provides
+filtering, lookup, and listing operations on ModelProfile objects.
 """
 
 from __future__ import annotations

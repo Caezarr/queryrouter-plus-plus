@@ -413,11 +413,11 @@ def print_report(result: EvalResult, preference: str) -> None:
 
     print(f"\n  Queries evaluated:  {result.total_queries:,}")
     print(
-        f"  Agreement rate:     {result.agreement_count:,} / {result.total_queries:,} ({result.agreement_rate:.1%})"
+        f"  Agreement rate:     {result.agreement_count:,} / {result.total_queries:,}"
+        f" ({result.agreement_rate:.1%})"
     )
     print(f"  Cost (actual):      ${result.total_cost_actual_usd:.2f}")
     print(f"  Cost (router):      ${result.total_cost_router_usd:.2f}")
-    savings_sign = "+" if result.estimated_cost_savings_pct < 0 else ""
     print(
         f"  Cost savings:       {result.estimated_cost_savings_pct:+.1f}%"
         f"  (${result.total_cost_actual_usd - result.total_cost_router_usd:+.2f})"
@@ -467,7 +467,8 @@ def print_comparison_summary(results: dict[str, EvalResult]) -> None:
         savings = f"{r.estimated_cost_savings_pct:+.1f}%"
         delta = r.total_cost_actual_usd - r.total_cost_router_usd
         print(
-            f"  {pref:<20} {r.agreement_rate:>9.1%} ${r.total_cost_actual_usd:>9.2f} ${r.total_cost_router_usd:>9.2f} {savings:>7} (${delta:+.2f})"
+            f"  {pref:<20} {r.agreement_rate:>9.1%} ${r.total_cost_actual_usd:>9.2f}"
+            f" ${r.total_cost_router_usd:>9.2f} {savings:>7} (${delta:+.2f})"
         )
 
     # Show top model per preference

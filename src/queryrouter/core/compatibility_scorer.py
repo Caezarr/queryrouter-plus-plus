@@ -3,11 +3,8 @@
 
 """Compatibility scoring for QueryRouter++.
 
-description: Implements the composite scoring function
-    C(q, m, w) = sum_i w_i * c_i(phi(q), psi(m)) from the formal framework.
-agent: coder
-date: 2026-03-24
-version: 1.0
+Implements the composite scoring function
+C(q, m, w) = sum_i w_i * c_i(phi(q), psi(m)) from the formal framework.
 """
 
 from __future__ import annotations

@@ -3,11 +3,8 @@
 
 """Unit tests for CompatibilityScorer.
 
-description: Tests for the compatibility scoring function
-    S(q, m, w) = sum_i w_i * f_i(phi(q), psi(m)).
-agent: coder
-date: 2026-03-24
-version: 1.0
+Tests for the compatibility scoring function
+S(q, m, w) = sum_i w_i * f_i(phi(q), psi(m)).
 """
 
 import numpy as np
@@ -228,9 +225,9 @@ class TestLatencyDiscrimination:
         assert len(set(latency_scores)) > 1, "Latency scores should vary across models"
 
         # Check that at least one score is not 0.5 (confirming latency_ms is being used)
-        assert any(
-            score != 0.5 for score in latency_scores
-        ), "At least one model should have non-0.5 latency"
+        assert any(score != 0.5 for score in latency_scores), (
+            "At least one model should have non-0.5 latency"
+        )
 
 
 class TestGPQAWeighting:
@@ -319,6 +316,6 @@ class TestCostScaling:
         # Different output lengths should produce different cost scores
         # Long output costs more, so score should be lower (cost score is inverted)
         assert short_cost_score != long_cost_score, "Output length should affect cost score"
-        assert (
-            short_cost_score > long_cost_score
-        ), "Shorter output should have better (higher) cost score"
+        assert short_cost_score > long_cost_score, (
+            "Shorter output should have better (higher) cost score"
+        )

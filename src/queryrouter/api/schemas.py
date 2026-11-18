@@ -3,11 +3,8 @@
 
 """Pydantic v2 request/response schemas for the QueryRouter++ API.
 
-description: Defines UserPreferences, RoutingRequest, ModelScore, and
-    RoutingResponse models with full validation.
-agent: coder
-date: 2026-03-23
-version: 1.0
+Defines UserPreferences, RoutingRequest, ModelScore, and
+RoutingResponse models with full validation.
 """
 
 from __future__ import annotations
@@ -85,7 +82,9 @@ class UserPreferences(BaseModel):
     ]
     weights: dict[str, float] | None = Field(
         default=None,
-        description="Weight vector {w_performance, w_cost, w_latency, w_ecology}. Sum must equal 1.",
+        description=(
+            "Weight vector {w_performance, w_cost, w_latency, w_ecology}. Sum must equal 1."
+        ),
     )
     budget_per_query_usd: float | None = Field(
         default=None,

@@ -3,11 +3,8 @@
 
 """Query feature extraction for QueryRouter++.
 
-description: Extract feature vector phi(q) from raw query strings using
-    heuristic-based analysis (no external API calls).
-agent: coder
-date: 2026-03-24
-version: 1.0
+Extract feature vector phi(q) from raw query strings using
+heuristic-based analysis (no external API calls).
 """
 
 from __future__ import annotations
