@@ -1,19 +1,15 @@
 # MIT License
 # Copyright (c) 2026 QueryRouter++ Team
 
-"""Data loaders for QueryRouter++ model registry and query taxonomy.
+"""CSV loaders for the model matrices.
 
-description: Load benchmark, cost, and ecological CSV matrices plus query taxonomy JSON
-    into unified ModelProfile dataclasses and structured taxonomy objects.
-agent: coder
-date: 2026-03-23
-version: 1.0
+Reads the benchmark, cost and ecological CSV matrices from ``data_models/`` and
+merges them into one ``ModelProfile`` per model.
 """
 
 from __future__ import annotations
 
 import csv
-import json
 import math
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -241,128 +237,3 @@ class ModelRegistry:
             Sorted list of unique provider strings.
         """
         return sorted({p.provider for p in self.models.values()})
-
-
-@dataclass
-class QueryCategory:
-    """A single category from the query taxonomy.
-
-    Attributes:
-        name: Category identifier (e.g. "coding", "math_reasoning").
-        description: Human-readable description of the category.
-        examples: Example queries belonging to this category.
-        complexity_level: Expected complexity ("simple", "medium", "complex").
-        model_requirements: Minimum model capabilities for this category.
-        benchmark_coverage: Relevant benchmarks for evaluating this category.
-    """
-
-    name: str
-    description: str
-    examples: list[str] = field(default_factory=list)
-    complexity_level: str = "medium"
-    model_requirements: dict[str, str] = field(default_factory=dict)
-    benchmark_coverage: list[str] = field(default_factory=list)
-
-
-@dataclass
-class TaxonomyDimension:
-    """A classification dimension from the query taxonomy.
-
-    Attributes:
-        name: Dimension identifier (e.g. "task_type", "complexity").
-        description: What this dimension captures.
-        values: Allowed values for this dimension.
-    """
-
-    name: str
-    description: str
-    values: list[str] = field(default_factory=list)
-
-
-class QueryTaxonomyLoader:
-    """Load the query taxonomy JSON into structured category and dimension objects.
-
-    The taxonomy defines the space of query types that QueryRouter++ can
-    classify and route.
-
-    Attributes:
-        categories: List of query categories.
-        dimensions: List of taxonomy dimensions.
-
-    Example:
-        >>> taxonomy = QueryTaxonomyLoader(Path("workspace/data/query_taxonomy.json"))
-        >>> taxonomy.get_category("coding").complexity_level
-        'medium-complex'
-    """
-
-    def __init__(self, taxonomy_path: Path) -> None:
-        """Initialize by loading and parsing the taxonomy JSON.
-
-        Args:
-            taxonomy_path: Path to query_taxonomy.json.
-
-        Raises:
-            FileNotFoundError: If the file does not exist.
-            json.JSONDecodeError: If the file is not valid JSON.
-        """
-        if not taxonomy_path.exists():
-            raise FileNotFoundError(f"Taxonomy file not found: {taxonomy_path}")
-
-        with open(taxonomy_path, encoding="utf-8") as f:
-            data = json.load(f)
-
-        self.categories: list[QueryCategory] = []
-        for cat in data.get("categories", []):
-            self.categories.append(
-                QueryCategory(
-                    name=cat["name"],
-                    description=cat.get("description", ""),
-                    examples=cat.get("examples", []),
-                    complexity_level=cat.get("complexity_level", "medium"),
-                    model_requirements=cat.get("typical_model_requirements", {}),
-                    benchmark_coverage=cat.get("benchmark_coverage", []),
-                )
-            )
-
-        self.dimensions: list[TaxonomyDimension] = []
-        for dim_name, dim_data in data.get("dimensions", {}).items():
-            self.dimensions.append(
-                TaxonomyDimension(
-                    name=dim_name,
-                    description=dim_data.get("description", ""),
-                    values=dim_data.get("values", []),
-                )
-            )
-
-    def get_category(self, name: str) -> QueryCategory:
-        """Retrieve a category by name.
-
-        Args:
-            name: The category name (e.g. "coding").
-
-        Returns:
-            The matching QueryCategory.
-
-        Raises:
-            KeyError: If no category with that name exists.
-        """
-        for cat in self.categories:
-            if cat.name == name:
-                return cat
-        raise KeyError(f"Category '{name}' not found in taxonomy")
-
-    def list_category_names(self) -> list[str]:
-        """Return all category names.
-
-        Returns:
-            List of category name strings.
-        """
-        return [cat.name for cat in self.categories]
-
-    def list_dimension_names(self) -> list[str]:
-        """Return all dimension names.
-
-        Returns:
-            List of dimension name strings.
-        """
-        return [dim.name for dim in self.dimensions]

@@ -27,7 +27,7 @@ from fastapi.responses import StreamingResponse
 from pydantic import BaseModel, Field
 
 from queryrouter.api.dependencies import get_router
-from queryrouter.api.presets import PresetConfig, resolve_mode
+from queryrouter.api.presets import PresetConfig, list_presets, resolve_mode
 from queryrouter.api.schemas import RoutingRequest, UserPreferences
 from queryrouter.data.loaders import ModelProfile
 
@@ -106,7 +106,7 @@ def _extract_query(messages: list[ChatMessage]) -> str:
             if isinstance(msg.content, list):
                 for part in msg.content:
                     if isinstance(part, dict) and part.get("type") == "text":
-                        return part["text"]
+                        return str(part["text"])
     return ""
 
 
@@ -201,19 +201,17 @@ def _build_upstream_body(
 
 
 @router.get("/models")
-def list_models() -> dict:
+def list_models() -> dict[str, Any]:
     """OpenAI-compatible model listing.
 
     Returns the 4 LibreChat preset modes instead of actual models,
     for the simplified 4-modes integration.
     """
-    from queryrouter.api.presets import list_presets
-
     presets = list_presets()
     now = int(time.time())
 
     # Map preset IDs to LibreChat mode names
-    MODE_NAMES = {
+    mode_names = {
         "eco": "mode-ecologique",
         "performance": "mode-performance",
         "economique": "mode-economique",
@@ -223,7 +221,7 @@ def list_models() -> dict:
     data = []
     for preset in presets:
         preset_id = preset["id"]
-        mode_name = MODE_NAMES.get(preset_id, f"mode-{preset_id}")
+        mode_name = mode_names.get(preset_id, f"mode-{preset_id}")
         data.append(
             {
                 "id": mode_name,
@@ -263,12 +261,11 @@ async def chat_completions(request: ChatCompletionRequest) -> Any:
         raise HTTPException(status_code=400, detail="No user message found")
 
     # Build routing request with preset configuration
-    # BUG FIX: Pass preset weights directly to override default PRESET_WEIGHTS
-    # BUG FIX: Pass allowed_models to preferences instead of context
+    # The preset's own weights and allowed_models override the generic PRESET_WEIGHTS.
     routing_req = RoutingRequest(
         query=query_text,
         preferences=UserPreferences(
-            optimize_for="custom",  # type: ignore[arg-type]
+            optimize_for="custom",
             weights=preset.weights,  # Use preset's custom weights
             allowed_models=preset.allowed_models,  # Use preset's allowed models
         ),
@@ -280,7 +277,6 @@ async def chat_completions(request: ChatCompletionRequest) -> Any:
     )
 
     # Route with preset-specific strategy and cascade threshold
-    # BUG FIX: Pass cascade_threshold from preset to router
     router = get_router(preset.strategy, preset.cascade_threshold)
     routing_resp = router.route(routing_req)
     chosen_id = routing_resp.recommended_model
@@ -310,7 +306,6 @@ async def chat_completions(request: ChatCompletionRequest) -> Any:
     url = f"{base_url.rstrip('/')}/chat/completions"
 
     if request.stream:
-        # BUG FIX: Pass all metadata to streaming proxy for consistency with non-streaming
         return StreamingResponse(
             _stream_proxy(
                 url,
@@ -358,47 +353,50 @@ async def _stream_proxy(
     model_display_name: str,
     provider: str,
     preference: str,
-    scores: list[dict],
+    scores: list[dict[str, Any]],
 ) -> Any:
     """Stream SSE events from upstream, injecting routing info in the first chunk.
 
-    BUG FIX: Includes all metadata fields for consistency with non-streaming response.
+    The injected ``queryrouter`` block carries the same fields as the
+    non-streaming response.
     """
     first = True
-    async with httpx.AsyncClient(timeout=120.0) as client:
-        async with client.stream("POST", url, json=body, headers=headers) as resp:
-            if resp.status_code != 200:
-                error_body = await resp.aread()
-                yield f"data: {json.dumps({'error': {'message': error_body.decode(), 'code': resp.status_code}})}\n\n"
-                return
+    async with (
+        httpx.AsyncClient(timeout=120.0) as client,
+        client.stream("POST", url, json=body, headers=headers) as resp,
+    ):
+        if resp.status_code != 200:
+            error_body = await resp.aread()
+            error = {"error": {"message": error_body.decode(), "code": resp.status_code}}
+            yield f"data: {json.dumps(error)}\n\n"
+            return
 
-            async for line in resp.aiter_lines():
-                if not line:
-                    yield "\n"
+        async for line in resp.aiter_lines():
+            if not line:
+                yield "\n"
+                continue
+
+            if first and line.startswith("data: ") and line != "data: [DONE]":
+                first = False
+                try:
+                    chunk = json.loads(line[6:])
+                    chunk["queryrouter"] = {
+                        "mode": preset.name.lower().replace(" ", "_"),
+                        "mode_name": preset.name,
+                        "mode_icon": preset.icon,
+                        "model_used": chosen_id,
+                        "model_display_name": model_display_name,
+                        "provider": provider,
+                        "preference": preference,
+                        "explanation": routing_resp.explanation,
+                        "scores": scores,
+                    }
+                    yield f"data: {json.dumps(chunk)}\n\n"
                     continue
+                except json.JSONDecodeError:
+                    pass
 
-                if first and line.startswith("data: ") and line != "data: [DONE]":
-                    first = False
-                    try:
-                        chunk = json.loads(line[6:])
-                        # BUG FIX: Include all metadata fields (9 fields, matching non-streaming)
-                        chunk["queryrouter"] = {
-                            "mode": preset.name.lower().replace(" ", "_"),
-                            "mode_name": preset.name,
-                            "mode_icon": preset.icon,
-                            "model_used": chosen_id,
-                            "model_display_name": model_display_name,
-                            "provider": provider,
-                            "preference": preference,
-                            "explanation": routing_resp.explanation,
-                            "scores": scores,
-                        }
-                        yield f"data: {json.dumps(chunk)}\n\n"
-                        continue
-                    except json.JSONDecodeError:
-                        pass
-
-                if line.startswith("data:"):
-                    yield f"{line}\n\n"
-                else:
-                    yield f"{line}\n"
+            if line.startswith("data:"):
+                yield f"{line}\n\n"
+            else:
+                yield f"{line}\n"

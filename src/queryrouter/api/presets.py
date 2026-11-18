@@ -10,9 +10,11 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Literal
+from typing import Any, Literal
 
 import yaml
+
+from queryrouter._paths import DEFAULT_PRESETS_PATH
 
 
 @dataclass
@@ -84,7 +86,7 @@ class PresetManager:
             config_path: Path to presets.yaml. If None, uses default location.
         """
         if config_path is None:
-            config_path = Path(__file__).resolve().parents[1] / "config" / "presets.yaml"
+            config_path = DEFAULT_PRESETS_PATH
 
         self.config_path = config_path
         self.presets: dict[str, PresetConfig] = {}
@@ -201,7 +203,7 @@ class PresetManager:
             preset_id, self.presets.get("equilibre", list(self.presets.values())[0])
         )
 
-    def list_presets(self) -> list[dict]:
+    def list_presets(self) -> list[dict[str, Any]]:
         """List all available presets with their metadata.
 
         Returns:
@@ -242,6 +244,6 @@ def get_preset(preset_id: str) -> PresetConfig | None:
     return get_preset_manager().get_preset(preset_id)
 
 
-def list_presets() -> list[dict]:
+def list_presets() -> list[dict[str, Any]]:
     """Convenience function to list all presets."""
     return get_preset_manager().list_presets()

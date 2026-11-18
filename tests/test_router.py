@@ -3,11 +3,8 @@
 
 """Integration tests for QueryRouter.
 
-description: Tests for all three routing strategies (direct, cascade, embedding)
-    and the explain functionality.
-agent: coder
-date: 2026-03-24
-version: 1.0
+Tests for all three routing strategies (direct, cascade, embedding)
+and the explain functionality.
 """
 
 from pathlib import Path

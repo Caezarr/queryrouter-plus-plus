@@ -3,11 +3,8 @@
 
 """Preference resolution engine for QueryRouter++.
 
-description: Resolves UserPreferences into concrete WeightVector and applies
-    hard constraints (budget, latency) to filter eligible models.
-agent: coder
-date: 2026-03-24
-version: 1.0
+Resolves UserPreferences into concrete WeightVector and applies
+hard constraints (budget, latency) to filter eligible models.
 """
 
 from __future__ import annotations

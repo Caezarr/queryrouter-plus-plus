@@ -40,7 +40,7 @@ ERROR: CSV parse error in models_cost_matrix.csv at line 7
 
 2. **Malformed CSV** — Extra commas, mismatched columns, or encoding issues
 
-3. **Wrong `QUERYROUTER_DATA_DIR`** — Environment variable points to nonexistent directory
+3. **Running outside the repository layout** — the API loads `data_models/` relative to the repository root (`src/queryrouter/_paths.py`); in Docker it is `/app/data_models`
 
 ### Checks
 
@@ -53,12 +53,7 @@ ls -lh data_models/*.csv
 # models_cost_matrix.csv
 # models_eco_matrix.csv
 
-# 2. Check environment variable
-grep QUERYROUTER_DATA_DIR .env
-
-# Should show: QUERYROUTER_DATA_DIR=./data_models
-
-# 3. Validate CSV structure (check line count and columns)
+# 2. Validate CSV structure (check line count and columns)
 wc -l data_models/*.csv
 head -3 data_models/models_benchmark_matrix.csv
 ```
@@ -95,14 +90,9 @@ with open('data_models/models_benchmark_matrix.csv') as f:
 "
 ```
 
-**If `QUERYROUTER_DATA_DIR` is wrong:**
-
-```bash
-# Copy example and fix path
-cp .env.example .env
-# Edit .env and set:
-# QUERYROUTER_DATA_DIR=./data_models
-```
+**If you run outside the repository layout:** pass the directory explicitly with
+`QueryRouter(data_dir=Path("/path/to/data_models"))`, or mount it at `/app/data_models`
+in Docker (as `docker-compose.4modes.yml` does).
 
 ### Test the Fix
 
@@ -122,7 +112,7 @@ poetry run pytest tests/test_loaders.py -v
 ```json
 {
   "error": "No eligible models found",
-  "selected_model": null
+  "recommended_model": null
 }
 ```
 
@@ -464,7 +454,7 @@ poetry run pytest tests/test_openai_compat.py -v
 
 ### Related Files
 
-- **[queryrouter/api/openai_compat.py](../queryrouter/api/openai_compat.py)** — OpenAI-compatible proxy implementation
+- **[queryrouter/api/openai_compat.py](../src/queryrouter/api/openai_compat.py)** — OpenAI-compatible proxy implementation
 - **[.env.example](../.env.example)** — Environment variable template with all provider keys
 
 ---
@@ -574,7 +564,7 @@ xdg-open htmlcov/index.html  # Linux
 ```bash
 # Run the same checks as GitHub Actions
 poetry run ruff check .
-poetry run black --check .
+poetry run ruff format --check .
 poetry run mypy queryrouter
 poetry run pytest --cov=queryrouter --cov-report=term-missing
 ```

@@ -3,11 +3,8 @@
 
 """Unit tests for QueryFeaturizer.
 
-description: Tests for query feature extraction covering task detection,
-    domain detection, linguistic features, and special content detection.
-agent: coder
-date: 2026-03-24
-version: 1.0
+Tests for query feature extraction covering task detection,
+domain detection, linguistic features, and special content detection.
 """
 
 import numpy as np

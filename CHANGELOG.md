@@ -4,6 +4,20 @@ All notable changes to QueryRouter++ are documented here.
 
 ## [Unreleased]
 
+### Changed
+- **Package layout**: code moved from symlinked top-level `api/`, `core/`, `data/`, `training/` into `src/queryrouter/`; `queryrouter.training` is now `queryrouter.evaluation`. Import paths `queryrouter.api.*`, `queryrouter.core.*` and `queryrouter.data.*` are unchanged.
+- **Dependencies**: runtime dependencies reduced to what the package imports (no torch / sentence-transformers / scikit-learn / xgboost / optuna); pandas, matplotlib and seaborn move to the optional `notebook` group, pymongo to the optional `eval` group.
+- **Tooling**: ruff format replaces black; CI now gates on `ruff check`, `ruff format --check` and strict `mypy`; pytest enforces 80% coverage.
+- **API**: unknown `context.strategy` values are normalized to `direct` before the router cache lookup.
+
+### Removed
+- Unused `RouterTrainer` and query-taxonomy loader classes.
+
+### Fixed
+- `QueryRouter()` without `data_dir` now finds `data_models/`.
+- docker-compose health check (curl is not in the slim image); MongoDB password is required and bound to localhost.
+- Exploration notebook paths and benchmark columns.
+
 ### Added
 - **CI/CD pipeline**: GitHub Actions workflow running `pytest` on Python 3.11 with Poetry dependency caching.
 - **Dependabot automation**: Weekly security updates for pip dependencies and GitHub Actions.

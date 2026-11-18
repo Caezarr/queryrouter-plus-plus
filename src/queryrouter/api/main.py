@@ -3,29 +3,29 @@
 
 """FastAPI application for QueryRouter++.
 
-description: REST API exposing routing, model listing, health check, and
-    explanation endpoints for multi-criteria LLM routing.
-agent: coder
-date: 2026-03-24
-version: 1.0
+REST API exposing routing, model listing, health check, and
+explanation endpoints for multi-criteria LLM routing.
 """
 
 from __future__ import annotations
 
 import os
+from typing import Any
 
 import uvicorn
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 
+from queryrouter import __version__
 from queryrouter.api.dependencies import get_router
 from queryrouter.api.openai_compat import router as openai_router
 from queryrouter.api.schemas import RoutingRequest, RoutingResponse
+from queryrouter.core.router import STRATEGIES, Strategy
 
 app = FastAPI(
     title="QueryRouter++",
     description="Multi-criteria LLM routing API based on formalized query-model compatibility.",
-    version="0.2.0",
+    version=__version__,
     license_info={"name": "MIT"},
 )
 
@@ -43,6 +43,19 @@ app.include_router(openai_router)
 # Router factory is shared via api.dependencies to avoid duplication.
 
 
+def _requested_strategy(request: RoutingRequest) -> Strategy:
+    """Read ``context["strategy"]``; unknown values fall back to ``direct``.
+
+    Unknown names already routed like ``direct``. Normalizing them here also
+    keeps user input from growing the per-strategy router cache without bound.
+    """
+    requested = (request.context or {}).get("strategy", "direct")
+    for strategy in STRATEGIES:
+        if requested == strategy:
+            return strategy
+    return "direct"
+
+
 @app.get("/health")
 def health_check() -> dict[str, str]:
     """Health check endpoint.
@@ -50,11 +63,11 @@ def health_check() -> dict[str, str]:
     Returns:
         Dictionary with status "ok" and version info.
     """
-    return {"status": "ok", "version": "0.2.0"}
+    return {"status": "ok", "version": __version__}
 
 
 @app.get("/models")
-def list_models() -> dict[str, list[dict]]:
+def list_models() -> dict[str, list[dict[str, Any]]]:
     """List all available models with their profiles.
 
     Returns:
@@ -94,8 +107,7 @@ def route_query(request: RoutingRequest) -> RoutingResponse:
         HTTPException: If routing fails.
     """
     try:
-        strategy = request.context.get("strategy", "direct") if request.context else "direct"
-        router = get_router(strategy)
+        router = get_router(_requested_strategy(request))
         return router.route(request)
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e)) from e
@@ -115,8 +127,7 @@ def explain_routing(request: RoutingRequest) -> dict[str, str]:
         HTTPException: If explanation generation fails.
     """
     try:
-        strategy = request.context.get("strategy", "direct") if request.context else "direct"
-        router = get_router(strategy)
+        router = get_router(_requested_strategy(request))
         explanation = router.explain(request)
         return {"explanation": explanation}
     except Exception as e:

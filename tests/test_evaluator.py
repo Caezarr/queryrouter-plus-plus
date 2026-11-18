@@ -11,7 +11,7 @@ import pytest
 
 from queryrouter.api.schemas import UserPreferences
 from queryrouter.core.router import QueryRouter
-from queryrouter.training.evaluator import ComparisonReport, EvaluationReport, RouterEvaluator
+from queryrouter.evaluation.evaluator import ComparisonReport, EvaluationReport, RouterEvaluator
 
 DATA_DIR = Path(__file__).resolve().parents[1] / "data_models"
 

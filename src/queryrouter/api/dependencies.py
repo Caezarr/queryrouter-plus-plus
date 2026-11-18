@@ -9,15 +9,13 @@ API endpoints (main.py) and the OpenAI-compatible proxy (openai_compat.py).
 
 from __future__ import annotations
 
-from pathlib import Path
+from queryrouter._paths import DEFAULT_DATA_DIR
+from queryrouter.core.router import QueryRouter, Strategy
 
-from queryrouter.core.router import QueryRouter
-
-_DATA_DIR = Path(__file__).resolve().parents[1] / "data_models"
 _routers: dict[tuple[str, float], QueryRouter] = {}
 
 
-def get_router(strategy: str = "direct", cascade_threshold: float = 0.6) -> QueryRouter:
+def get_router(strategy: Strategy = "direct", cascade_threshold: float = 0.6) -> QueryRouter:
     """Get or create a cached router instance.
 
     Args:
@@ -29,10 +27,9 @@ def get_router(strategy: str = "direct", cascade_threshold: float = 0.6) -> Quer
     """
     cache_key = (strategy, cascade_threshold)
     if cache_key not in _routers:
-        data_dir = _DATA_DIR if _DATA_DIR.exists() else None
         _routers[cache_key] = QueryRouter(
             strategy=strategy,
-            data_dir=data_dir,
+            data_dir=DEFAULT_DATA_DIR,
             cascade_threshold=cascade_threshold,
         )
     return _routers[cache_key]

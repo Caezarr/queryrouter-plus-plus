@@ -1,8 +1,3 @@
-# description: Poetry project configuration for QueryRouter++
-# agent: coder
-# date: 2026-03-23
-# version: 1.0
-
 [tool.poetry]
 name = "queryrouter"
 version = "0.2.0"
@@ -10,7 +5,7 @@ description = "Multi-criteria LLM routing system based on formalized query-model
 authors = ["QueryRouter++ Team"]
 license = "MIT"
 readme = "README.md"
-packages = [{include = "queryrouter", from = "."}]
+packages = [{include = "queryrouter", from = "src"}]
 
 [tool.poetry.dependencies]
 python = "^3.11"
@@ -18,25 +13,32 @@ fastapi = ">=0.115,<0.163"
 starlette = ">=1.6,<2"
 uvicorn = {extras = ["standard"], version = ">=0.34,<0.55"}
 pydantic = "^2.0"
-sentence-transformers = ">=5.6,<7"
-transformers = ">=4.57.6"
-urllib3 = ">=2.8.0"
-scikit-learn = "^1.5.0"
-xgboost = ">=2.1,<4.0"
-optuna = ">=4,<6"
-pandas = ">=2.2,<4.0"
 numpy = "^2.0.0"
 httpx = "^0.28.0"
-python-dotenv = "^1.0.0"
-rich = ">=13.9,<16.0"
 pyyaml = "^6.0.0"
 
 [tool.poetry.group.dev.dependencies]
 pytest = "^9.0.3"
 pytest-cov = ">=6,<8"
 ruff = ">=0.8,<0.18"
-black = "^26.3.1"
 mypy = ">=1.13,<3.0"
+types-pyyaml = "^6.0"
+
+# Optional: `poetry install --with eval` for scripts/evaluate_on_librechat.py
+[tool.poetry.group.eval]
+optional = true
+
+[tool.poetry.group.eval.dependencies]
+pymongo = "^4.10"
+
+# Optional: `poetry install --with notebook` for notebooks/exploration.ipynb
+[tool.poetry.group.notebook]
+optional = true
+
+[tool.poetry.group.notebook.dependencies]
+pandas = ">=2.2,<4.0"
+matplotlib = "^3.9"
+seaborn = "^0.13"
 
 [tool.poetry.scripts]
 queryrouter = "queryrouter.api.main:main"
@@ -44,21 +46,25 @@ queryrouter = "queryrouter.api.main:main"
 [tool.ruff]
 line-length = 100
 target-version = "py311"
+src = ["src", "tests"]
+# Lint and format Python sources only (not Markdown code fences or notebooks).
+include = ["*.py", "*.pyi", "**/pyproject.toml"]
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "N", "W", "UP", "B", "SIM"]
 
-[tool.black]
-line-length = 100
-target-version = ["py311"]
+[tool.ruff.lint.isort]
+known-first-party = ["queryrouter"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
-addopts = "--cov=queryrouter --cov-report=term-missing"
+addopts = "--cov=queryrouter --cov-report=term-missing --cov-fail-under=80"
 
 [tool.mypy]
 python_version = "3.11"
 strict = true
+mypy_path = "src"
+packages = ["queryrouter"]
 
 [build-system]
 requires = ["poetry-core"]

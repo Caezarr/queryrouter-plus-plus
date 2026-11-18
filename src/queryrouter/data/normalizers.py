@@ -3,11 +3,8 @@
 
 """Feature normalization for QueryRouter++ model profiles.
 
-description: Normalize benchmark, cost, and ecological scores to [0,1] scale
-    for use in the compatibility scoring function S(q, m, w).
-agent: coder
-date: 2026-03-23
-version: 1.0
+Normalize benchmark, cost, and ecological scores to [0,1] scale
+for use in the compatibility scoring function S(q, m, w).
 """
 
 from __future__ import annotations
@@ -99,7 +96,8 @@ class BenchmarkNormalizer:
         denom = self.maxs - self.mins
         denom = np.where(denom == 0, 1.0, denom)
         normalized = (filled - self.mins) / denom
-        return np.clip(normalized, 0.0, 1.0)
+        clipped: np.ndarray = np.clip(normalized, 0.0, 1.0)
+        return clipped
 
 
 class CostNormalizer:

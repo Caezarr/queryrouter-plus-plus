@@ -2,8 +2,9 @@
 
 Welcome to the QueryRouter++ documentation. This index helps operators and contributors discover all documentation resources.
 
-## Quick Start
+## Start Here
 
+- **[ARCHITECTURE.md](ARCHITECTURE.md)** — Request flow, scoring function, model registry, extension points and limits
 - **[QUICKSTART.md](QUICKSTART.md)** — Get QueryRouter++ running locally in under 5 minutes with Python/Poetry or Docker
 
 ## LibreChat Integration

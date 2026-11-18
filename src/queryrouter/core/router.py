@@ -3,20 +3,18 @@
 
 """Main routing engine for QueryRouter++.
 
-description: QueryRouter class implementing direct, cascade, and embedding-based
-    routing strategies for multi-criteria LLM selection.
-agent: coder
-date: 2026-03-24
-version: 1.0
+QueryRouter class implementing direct, cascade, and embedding-based
+routing strategies for multi-criteria LLM selection.
 """
 
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Literal
+from typing import Literal, get_args
 
 import numpy as np
 
+from queryrouter._paths import DEFAULT_DATA_DIR
 from queryrouter.api.schemas import (
     ModelScore as APIModelScore,
 )
@@ -36,6 +34,9 @@ from queryrouter.core.query_featurizer import QueryFeaturizer
 from queryrouter.data.loaders import ModelProfile
 from queryrouter.data.normalizers import FeatureNormalizer
 from queryrouter.data.utils import estimate_query_cost
+
+Strategy = Literal["direct", "cascade", "embedding"]
+STRATEGIES: tuple[Strategy, ...] = get_args(Strategy)
 
 
 class QueryRouter:
@@ -74,7 +75,7 @@ class QueryRouter:
 
     def __init__(
         self,
-        strategy: Literal["direct", "cascade", "embedding"] = "direct",
+        strategy: Strategy = "direct",
         data_dir: Path | None = None,
         cascade_threshold: float = 0.6,
         tool_boost: dict[str, float] | None = None,
@@ -83,7 +84,7 @@ class QueryRouter:
 
         Args:
             strategy: One of "direct", "cascade", "embedding".
-            data_dir: Path to data directory. If None, uses default workspace path.
+            data_dir: Path to data directory. If None, uses the repository's data_models/.
             cascade_threshold: Threshold for cascade query-complexity escalation.
                 Queries with complexity >= threshold are sent to the strongest model.
             tool_boost: Override for tool-boost config. Keys: delta_first_class,
@@ -97,7 +98,7 @@ class QueryRouter:
         self._tool_boost_cfg = cfg
 
         if data_dir is None:
-            data_dir = Path(__file__).resolve().parents[2] / "data_models"
+            data_dir = DEFAULT_DATA_DIR
 
         self.registry = ModelRegistry(data_dir)
         self.featurizer = QueryFeaturizer()
@@ -487,7 +488,7 @@ class QueryRouter:
             estimated_latency_ms=best_model.latency_ms or 0 if best_model else 0,
         )
 
-    def _convert_scores(self, scored: list) -> list[APIModelScore]:
+    def _convert_scores(self, scored: list[ModelScore]) -> list[APIModelScore]:
         """Convert internal ModelScore objects to API schema.
 
         Args:

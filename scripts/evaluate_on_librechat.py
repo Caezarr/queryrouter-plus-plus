@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Evaluate QueryRouter++ against real LibreChat/WonkaChat conversation data.
+"""Evaluate QueryRouter++ against real LibreChat conversation data.
 
 Connects to your LibreChat MongoDB, extracts user queries and the models
 that were actually used, then runs QueryRouter++ to see if it would have
@@ -7,7 +7,7 @@ picked the same model (or a better one).
 
 Usage:
     # 1. Set your MongoDB URI
-    export MONGO_URI="mongodb+srv://user:pass@cluster.mongodb.net/wonkachat-prod"
+    export MONGO_URI="mongodb+srv://<user>:<password>@<cluster>/<database>"
 
     # 2. Run evaluation (all key preferences)
     python scripts/evaluate_on_librechat.py --limit 5000
@@ -27,9 +27,9 @@ from collections import Counter
 from dataclasses import dataclass, field
 from pathlib import Path
 
-# Add project root to path
+# Allow running from a fresh checkout without `poetry install` (src layout).
 _PROJECT_ROOT = Path(__file__).resolve().parents[1]
-sys.path.insert(0, str(_PROJECT_ROOT))
+sys.path.insert(0, str(_PROJECT_ROOT / "src"))
 
 # Load .env from project root
 _dotenv_path = _PROJECT_ROOT / ".env"
@@ -48,10 +48,10 @@ if _dotenv_path.exists():
 
 
 # ---------------------------------------------------------------------------
-# Model name normalization: WonkaChat/LibreChat → QueryRouter++ catalogue
+# Model name normalization: LibreChat → QueryRouter++ catalogue
 # ---------------------------------------------------------------------------
 
-# Maps raw model strings from WonkaChat to QueryRouter++ model_ids.
+# Maps raw model strings from LibreChat to QueryRouter++ model_ids.
 # Order matters: checked sequentially, first match wins.
 _MODEL_ALIASES: dict[str, str] = {
     # Anthropic Claude — policy/fallback variants
@@ -109,7 +109,7 @@ _SKIP_PREFIXES = ("agent_",)
 
 
 def _normalize_model_id(raw: str) -> str | None:
-    """Normalize a WonkaChat/LibreChat model name to a QueryRouter++ model_id.
+    """Normalize a LibreChat model name to a QueryRouter++ model_id.
 
     Returns None for models that should be filtered out (agents, unknown).
     """
@@ -413,11 +413,11 @@ def print_report(result: EvalResult, preference: str) -> None:
 
     print(f"\n  Queries evaluated:  {result.total_queries:,}")
     print(
-        f"  Agreement rate:     {result.agreement_count:,} / {result.total_queries:,} ({result.agreement_rate:.1%})"
+        f"  Agreement rate:     {result.agreement_count:,} / {result.total_queries:,}"
+        f" ({result.agreement_rate:.1%})"
     )
     print(f"  Cost (actual):      ${result.total_cost_actual_usd:.2f}")
     print(f"  Cost (router):      ${result.total_cost_router_usd:.2f}")
-    savings_sign = "+" if result.estimated_cost_savings_pct < 0 else ""
     print(
         f"  Cost savings:       {result.estimated_cost_savings_pct:+.1f}%"
         f"  (${result.total_cost_actual_usd - result.total_cost_router_usd:+.2f})"
@@ -467,7 +467,8 @@ def print_comparison_summary(results: dict[str, EvalResult]) -> None:
         savings = f"{r.estimated_cost_savings_pct:+.1f}%"
         delta = r.total_cost_actual_usd - r.total_cost_router_usd
         print(
-            f"  {pref:<20} {r.agreement_rate:>9.1%} ${r.total_cost_actual_usd:>9.2f} ${r.total_cost_router_usd:>9.2f} {savings:>7} (${delta:+.2f})"
+            f"  {pref:<20} {r.agreement_rate:>9.1%} ${r.total_cost_actual_usd:>9.2f}"
+            f" ${r.total_cost_router_usd:>9.2f} {savings:>7} (${delta:+.2f})"
         )
 
     # Show top model per preference
@@ -488,9 +489,7 @@ def print_comparison_summary(results: dict[str, EvalResult]) -> None:
 
 
 def main() -> None:
-    parser = argparse.ArgumentParser(
-        description="Evaluate QueryRouter++ on LibreChat/WonkaChat data"
-    )
+    parser = argparse.ArgumentParser(description="Evaluate QueryRouter++ on LibreChat data")
     parser.add_argument(
         "--mongo-uri", default=os.getenv("MONGO_URI", "mongodb://localhost:27017/LibreChat")
     )

@@ -3,11 +3,8 @@
 
 """Tests for OpenAPI schema generation and validation.
 
-description: Verifies that the OpenAPI schema is valid, complete, and documents
-    all required fields for the /route endpoint and score breakdown.
-agent: coder
-date: 2026-10-05
-version: 1.0
+Verifies that the OpenAPI schema is valid, complete, and documents
+all required fields for the /route endpoint and score breakdown.
 """
 
 import json

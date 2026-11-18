@@ -75,7 +75,7 @@ git clone https://github.com/Caezarr/queryrouter-plus-plus.git
 cd queryrouter-plus-plus
 
 # Copier le template de configuration
-cp .env.4modes.example .env
+cp .env.example .env
 
 # Éditer le fichier .env avec vos clés API
 nano .env  # ou code .env, vim .env, etc.
@@ -478,8 +478,8 @@ LibreChat affiche réponse + "— Généré par Gemini 2.5 Flash"
 |---------|------|
 | `config/presets.yaml` | Configuration des 4 modes (modèles, poids, stratégies) |
 | `config/librechat-4modes.yaml` | Configuration LibreChat |
-| `api/presets.py` | Module de chargement des presets |
-| `api/openai_compat.py` | Endpoint OpenAI-compatible avec mapping modes→presets |
+| `src/queryrouter/api/presets.py` | Module de chargement des presets |
+| `src/queryrouter/api/openai_compat.py` | Endpoint OpenAI-compatible avec mapping modes→presets |
 | `docker-compose.4modes.yml` | Stack Docker complète |
 
 ---
