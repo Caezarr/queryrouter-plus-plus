@@ -5,15 +5,22 @@
 
 from __future__ import annotations
 
+import pytest
 from fastapi.testclient import TestClient
 
+from queryrouter._paths import DEFAULT_DATA_DIR
 from queryrouter.api.main import app
 from queryrouter.api.openai_compat import (
+    PROVIDER_CONFIG,
     ChatCompletionRequest,
     ChatMessage,
     _extract_query,
+    _get_provider_key,
+    _get_provider_url,
+    _provider_env_name,
     _resolve_preference,
 )
+from queryrouter.data.loaders import ModelRegistry
 
 client = TestClient(app)
 
@@ -122,3 +129,22 @@ class TestChatCompletionsRouting:
             },
         )
         assert response.status_code == 400
+
+
+class TestProviderConfig:
+    """Every provider in the model data must be reachable through the proxy."""
+
+    def test_every_data_provider_has_proxy_config(self) -> None:
+        providers = ModelRegistry(DEFAULT_DATA_DIR).list_providers()
+        missing = [p for p in providers if p not in PROVIDER_CONFIG]
+        assert missing == []
+
+    def test_mistral_resolves_url_and_key(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        monkeypatch.setenv("MISTRAL_API_KEY", "test-key")
+        assert _get_provider_url("Mistral AI") == "https://api.mistral.ai/v1"
+        assert _get_provider_key("Mistral AI") == "test-key"
+
+    def test_base_url_override_uses_env_safe_name(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        assert _provider_env_name("Mistral AI") == "MISTRAL_AI"
+        monkeypatch.setenv("QUERYROUTER_MISTRAL_AI_BASE_URL", "http://proxy.local/v1")
+        assert _get_provider_url("Mistral AI") == "http://proxy.local/v1"

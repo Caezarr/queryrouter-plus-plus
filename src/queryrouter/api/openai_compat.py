@@ -18,6 +18,7 @@ from __future__ import annotations
 
 import json
 import os
+import re
 import time
 from typing import Any
 
@@ -47,14 +48,20 @@ PROVIDER_CONFIG: dict[str, tuple[str, str]] = {
     "Google": ("https://generativelanguage.googleapis.com/v1beta/openai", "GOOGLE_API_KEY"),
     "DeepSeek": ("https://api.deepseek.com/v1", "DEEPSEEK_API_KEY"),
     "Meta": ("https://api.together.xyz/v1", "TOGETHER_API_KEY"),
-    "Mistral": ("https://api.mistral.ai/v1", "MISTRAL_API_KEY"),
+    "Mistral AI": ("https://api.mistral.ai/v1", "MISTRAL_API_KEY"),
     "Alibaba": ("https://dashscope-intl.aliyuncs.com/compatible-mode/v1", "DASHSCOPE_API_KEY"),
 }
 
 
-# Override base URLs via env vars (e.g. QUERYROUTER_OPENAI_BASE_URL)
+def _provider_env_name(provider: str) -> str:
+    """Env-var-safe provider name: "Mistral AI" -> "MISTRAL_AI"."""
+    return re.sub(r"[^A-Z0-9]+", "_", provider.upper()).strip("_")
+
+
+# Override base URLs via env vars (e.g. QUERYROUTER_OPENAI_BASE_URL,
+# QUERYROUTER_MISTRAL_AI_BASE_URL)
 def _get_provider_url(provider: str) -> str:
-    env_key = f"QUERYROUTER_{provider.upper()}_BASE_URL"
+    env_key = f"QUERYROUTER_{_provider_env_name(provider)}_BASE_URL"
     default_url, _ = PROVIDER_CONFIG.get(provider, ("", ""))
     return os.getenv(env_key, default_url)
 
