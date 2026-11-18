@@ -1,22 +1,16 @@
-# description: Multi-stage Docker build for QueryRouter++ API
-# agent: coder
-# date: 2026-03-24
-# version: 1.0
+# Multi-stage build for the QueryRouter++ API.
 
-# -- Builder stage --
+# -- Builder stage: resolve runtime dependencies only --
 FROM python:3.11-slim AS builder
 
 WORKDIR /app
 
 RUN pip install --no-cache-dir poetry==1.8.4
 
-COPY pyproject.toml ./
-COPY README.md ./
+COPY pyproject.toml README.md ./
 
 RUN poetry config virtualenvs.create false \
-    && poetry install --no-interaction --no-ansi --only main
-
-COPY . .
+    && poetry install --no-interaction --no-ansi --only main --no-root
 
 # -- Runtime stage --
 FROM python:3.11-slim AS runtime
@@ -27,7 +21,15 @@ WORKDIR /app
 
 COPY --from=builder /usr/local/lib/python3.11/site-packages /usr/local/lib/python3.11/site-packages
 COPY --from=builder /usr/local/bin/uvicorn /usr/local/bin/uvicorn
-COPY --from=builder /app /app
+
+# Package source (src layout) plus the runtime data it loads from the repo root.
+COPY src/ ./src/
+COPY data_models/ ./data_models/
+COPY config/ ./config/
+
+ENV PYTHONPATH=/app/src \
+    PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1
 
 USER appuser
 

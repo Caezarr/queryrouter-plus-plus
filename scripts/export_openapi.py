@@ -19,8 +19,8 @@ try:
 except ImportError:
     yaml = None  # type: ignore
 
-# Add parent directory to path to import queryrouter
-sys.path.insert(0, str(Path(__file__).parent.parent))
+# Allow running from a fresh checkout without `poetry install` (src layout).
+sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 
 from queryrouter.api.main import app
 

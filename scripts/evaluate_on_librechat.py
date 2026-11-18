@@ -27,9 +27,9 @@ from collections import Counter
 from dataclasses import dataclass, field
 from pathlib import Path
 
-# Add project root to path
+# Allow running from a fresh checkout without `poetry install` (src layout).
 _PROJECT_ROOT = Path(__file__).resolve().parents[1]
-sys.path.insert(0, str(_PROJECT_ROOT))
+sys.path.insert(0, str(_PROJECT_ROOT / "src"))
 
 # Load .env from project root
 _dotenv_path = _PROJECT_ROOT / ".env"

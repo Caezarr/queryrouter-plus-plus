@@ -14,6 +14,8 @@ from typing import Literal
 
 import yaml
 
+from queryrouter._paths import DEFAULT_PRESETS_PATH
+
 
 @dataclass
 class PresetConfig:
@@ -84,7 +86,7 @@ class PresetManager:
             config_path: Path to presets.yaml. If None, uses default location.
         """
         if config_path is None:
-            config_path = Path(__file__).resolve().parents[1] / "config" / "presets.yaml"
+            config_path = DEFAULT_PRESETS_PATH
 
         self.config_path = config_path
         self.presets: dict[str, PresetConfig] = {}

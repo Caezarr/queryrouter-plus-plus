@@ -10,7 +10,7 @@ description = "Multi-criteria LLM routing system based on formalized query-model
 authors = ["QueryRouter++ Team"]
 license = "MIT"
 readme = "README.md"
-packages = [{include = "queryrouter", from = "."}]
+packages = [{include = "queryrouter", from = "src"}]
 
 [tool.poetry.dependencies]
 python = "^3.11"
