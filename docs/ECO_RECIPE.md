@@ -58,7 +58,7 @@ request = RoutingRequest(
 )
 result = router.route(request)
 
-print(f"Model: {result.selected_model}")
+print(f"Model: {result.recommended_model}")
 print(f"CO₂: {result.score.breakdown['ecology']:.2f} (ecology score)")
 print(f"Performance: {result.score.breakdown['performance']:.2f}")
 print(f"Cost: {result.score.breakdown['cost']:.2f}")
@@ -87,7 +87,7 @@ request = RoutingRequest(
 )
 result = router.route(request)
 
-print(f"Model: {result.selected_model}")
+print(f"Model: {result.recommended_model}")
 print(f"CO₂: {result.score.breakdown['ecology']:.2f} (ecology score)")
 print(f"Performance: {result.score.breakdown['performance']:.2f}")
 print(f"Cost: {result.score.breakdown['cost']:.2f}")
@@ -121,7 +121,7 @@ request = RoutingRequest(
 )
 result = router.route(request)
 
-print(f"Model: {result.selected_model}")
+print(f"Model: {result.recommended_model}")
 print(f"CO₂ estimated: ~65.0g/1M tokens (LOW confidence)")
 print(f"Performance: {result.score.breakdown['performance']:.2f}")
 ```
@@ -148,7 +148,7 @@ request = RoutingRequest(
 )
 result = router.route(request)
 
-print(f"Model: {result.selected_model}")
+print(f"Model: {result.recommended_model}")
 print(f"CO₂ estimated: ~30.0g/1M tokens (MEDIUM confidence)")
 print(f"Performance: {result.score.breakdown['performance']:.2f}")
 print(f"Cost: {result.score.breakdown['cost']:.2f}")

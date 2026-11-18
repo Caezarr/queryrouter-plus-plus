@@ -489,9 +489,7 @@ def print_comparison_summary(results: dict[str, EvalResult]) -> None:
 
 
 def main() -> None:
-    parser = argparse.ArgumentParser(
-        description="Evaluate QueryRouter++ on LibreChat data"
-    )
+    parser = argparse.ArgumentParser(description="Evaluate QueryRouter++ on LibreChat data")
     parser.add_argument(
         "--mongo-uri", default=os.getenv("MONGO_URI", "mongodb://localhost:27017/LibreChat")
     )

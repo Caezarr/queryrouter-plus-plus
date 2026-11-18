@@ -27,9 +27,11 @@ cp .env.example .env
 
 The defaults work fine for local testing. Key settings:
 
-- `QUERYROUTER_DATA_DIR=./data_models` — where model data CSVs live
-- `QUERYROUTER_PORT=8000` — API server port
-- `QUERYROUTER_DEFAULT_STRATEGY=direct` — routing algorithm (direct | cascade | embedding)
+- `QUERYROUTER_HOST` / `QUERYROUTER_PORT` — bind address for `poetry run queryrouter`
+- `QUERYROUTER_<PROVIDER>_BASE_URL` — optional override of a provider's OpenAI-compatible base URL
+
+The routing strategy is chosen per request with `"context": {"strategy": "cascade"}`
+(`direct` by default).
 
 Provider API keys (OpenAI, Anthropic, etc.) are only needed if you use the `/v1/chat/completions` proxy endpoint.
 
@@ -73,23 +75,22 @@ curl -X POST http://localhost:8000/route \
 
 ```json
 {
-  "selected_model": "gemini-2-5-flash",
-  "score": {
-    "total": 0.952,
-    "breakdown": {
-      "performance": 0.884,
-      "cost": 0.991,
-      "latency": 0.960,
-      "ecology": 0.975
-    }
-  },
-  "strategy_used": "direct",
-  "alternatives": [
-    {"model": "llama-4-maverick", "score": 0.918},
-    {"model": "deepseek-v3", "score": 0.901}
-  ]
+  "recommended_model": "gemini-2-5-flash",
+  "scores": [
+    {
+      "model_id": "gemini-2-5-flash",
+      "score": 0.93,
+      "breakdown": {"performance": 0.86, "cost": 0.97, "latency": 0.95, "ecology": 0.94}
+    },
+    {"model_id": "llama-4-maverick", "score": 0.92, "breakdown": {"...": 0.0}}
+  ],
+  "explanation": "Direct routing selected gemini-2-5-flash with score 0.930",
+  "estimated_cost_usd": 0.0016,
+  "estimated_latency_ms": 450
 }
 ```
+
+(Shape is exact; the numbers depend on the CSVs in `data_models/`.)
 
 ### Option 3: Health check
 
@@ -117,12 +118,12 @@ Should return:
 
 Pass `optimize_for` in your request:
 
-- **`balanced`** — equal weight on performance, cost, latency, ecology (default)
-- **`performance`** — prioritize quality (w_perf = 0.85)
-- **`cost`** — minimize spend (w_cost = 0.85)
-- **`cost_performance`** — balanced quality/price (w_perf = 0.45, w_cost = 0.45)
-- **`ecology`** — minimize CO₂ (w_eco = 0.65)
-- **`latency`** — minimize response time (w_latency = 0.45)
+- **`balanced`** — 0.25 on each of performance, cost, latency, ecology
+- **`performance`** — w_perf = 0.7, others 0.1
+- **`cost`** — w_cost = 0.7, others 0.1
+- **`cost_performance`** — w_perf = 0.4, w_cost = 0.4, others 0.1
+- **`ecology`** — w_eco = 0.7, others 0.1
+- **`custom`** — pass your own `weights` (`w_performance`, `w_cost`, `w_latency`, `w_ecology`, summing to 1)
 
 ## Docker alternative
 
@@ -137,7 +138,7 @@ Health check: `curl http://localhost:8000/health`
 
 ## Next steps
 
-- **Read the full README** for detailed API usage, tool-aware routing, and evaluation results
+- **Read [ARCHITECTURE.md](ARCHITECTURE.md)** for the request flow, scoring function and extension points
 - **LibreChat integration:** See [`docs/LIBRECHAT_4MODES.md`](LIBRECHAT_4MODES.md) for ultra-simple 4-mode deployment
 - **Compatibility matrix:** Check [`docs/ROUTING-COMPATIBILITY-MATRIX.md`](ROUTING-COMPATIBILITY-MATRIX.md) for supported integrations
 - **Development setup:** See [CONTRIBUTING.md](../CONTRIBUTING.md) for test suite, linting, and PR guidelines
