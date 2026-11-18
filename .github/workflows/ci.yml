@@ -45,6 +45,15 @@ jobs:
       - name: Install project
         run: poetry install --no-interaction
 
+      - name: Lint
+        run: poetry run ruff check .
+
+      - name: Check formatting
+        run: poetry run ruff format --check .
+
+      - name: Type check
+        run: poetry run mypy
+
       - name: Run tests
         run: poetry run pytest
 
