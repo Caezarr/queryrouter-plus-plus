@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Evaluate QueryRouter++ against real LibreChat/WonkaChat conversation data.
+"""Evaluate QueryRouter++ against real LibreChat conversation data.
 
 Connects to your LibreChat MongoDB, extracts user queries and the models
 that were actually used, then runs QueryRouter++ to see if it would have
@@ -7,7 +7,7 @@ picked the same model (or a better one).
 
 Usage:
     # 1. Set your MongoDB URI
-    export MONGO_URI="mongodb+srv://user:pass@cluster.mongodb.net/wonkachat-prod"
+    export MONGO_URI="mongodb+srv://<user>:<password>@<cluster>/<database>"
 
     # 2. Run evaluation (all key preferences)
     python scripts/evaluate_on_librechat.py --limit 5000
@@ -48,10 +48,10 @@ if _dotenv_path.exists():
 
 
 # ---------------------------------------------------------------------------
-# Model name normalization: WonkaChat/LibreChat → QueryRouter++ catalogue
+# Model name normalization: LibreChat → QueryRouter++ catalogue
 # ---------------------------------------------------------------------------
 
-# Maps raw model strings from WonkaChat to QueryRouter++ model_ids.
+# Maps raw model strings from LibreChat to QueryRouter++ model_ids.
 # Order matters: checked sequentially, first match wins.
 _MODEL_ALIASES: dict[str, str] = {
     # Anthropic Claude — policy/fallback variants
@@ -109,7 +109,7 @@ _SKIP_PREFIXES = ("agent_",)
 
 
 def _normalize_model_id(raw: str) -> str | None:
-    """Normalize a WonkaChat/LibreChat model name to a QueryRouter++ model_id.
+    """Normalize a LibreChat model name to a QueryRouter++ model_id.
 
     Returns None for models that should be filtered out (agents, unknown).
     """
@@ -490,7 +490,7 @@ def print_comparison_summary(results: dict[str, EvalResult]) -> None:
 
 def main() -> None:
     parser = argparse.ArgumentParser(
-        description="Evaluate QueryRouter++ on LibreChat/WonkaChat data"
+        description="Evaluate QueryRouter++ on LibreChat data"
     )
     parser.add_argument(
         "--mongo-uri", default=os.getenv("MONGO_URI", "mongodb://localhost:27017/LibreChat")
