@@ -67,7 +67,7 @@ class UserPreferences(BaseModel):
             Auto-populated for presets; required for "custom".
         budget_per_query_usd: Max cost in USD per query (hard filter). None = no limit.
         max_latency_ms: Max latency in ms (hard filter). None = no limit.
-        eco_mode: Bias toward ecologically efficient models.
+        eco_mode: Reserved. Accepted for compatibility; routing ignores it today.
         allowed_models: Whitelist of model_ids. None = all eligible.
         excluded_models: Blacklist of model_ids. None = no exclusions.
 
@@ -98,7 +98,7 @@ class UserPreferences(BaseModel):
     )
     eco_mode: bool = Field(
         default=False,
-        description="When true, applies a bonus to eco-friendly models.",
+        description="Reserved: accepted but ignored by routing. Use optimize_for=ecology.",
     )
     allowed_models: list[str] | None = Field(
         default=None,

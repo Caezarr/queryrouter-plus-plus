@@ -401,7 +401,7 @@ components:
         eco_mode:
           type: boolean
           title: Eco Mode
-          description: When true, applies a bonus to eco-friendly models.
+          description: 'Reserved: accepted but ignored by routing. Use optimize_for=ecology.'
           default: false
         allowed_models:
           anyOf:
@@ -433,11 +433,11 @@ components:
         \ w_cost, w_latency, w_ecology}.\n        Auto-populated for presets; required\
         \ for \"custom\".\n    budget_per_query_usd: Max cost in USD per query (hard\
         \ filter). None = no limit.\n    max_latency_ms: Max latency in ms (hard filter).\
-        \ None = no limit.\n    eco_mode: Bias toward ecologically efficient models.\n\
-        \    allowed_models: Whitelist of model_ids. None = all eligible.\n    excluded_models:\
-        \ Blacklist of model_ids. None = no exclusions.\n\nExample:\n    >>> prefs\
-        \ = UserPreferences(optimize_for=\"cost\", budget_per_query_usd=0.01)\n  \
-        \  >>> prefs.weights\n    {'w_performance': 0.1, 'w_cost': 0.7, 'w_latency':\
+        \ None = no limit.\n    eco_mode: Reserved. Accepted for compatibility; routing\
+        \ ignores it today.\n    allowed_models: Whitelist of model_ids. None = all\
+        \ eligible.\n    excluded_models: Blacklist of model_ids. None = no exclusions.\n\
+        \nExample:\n    >>> prefs = UserPreferences(optimize_for=\"cost\", budget_per_query_usd=0.01)\n\
+        \    >>> prefs.weights\n    {'w_performance': 0.1, 'w_cost': 0.7, 'w_latency':\
         \ 0.1, 'w_ecology': 0.1}"
     ValidationError:
       properties:

@@ -33,7 +33,7 @@ C(q, m, w) = w_performance · P(q,m) + w_cost · K(q,m) + w_latency · L(q,m) + 
 
 Each axis score is normalized to `[0, 1]`, where `1.0` = optimal for that criterion.
 
-**Implementation:** See `queryrouter/core/compatibility_scorer.py` for the full scoring logic.
+**Implementation:** See `src/queryrouter/core/compatibility_scorer.py` for the full scoring logic.
 
 ---
 
@@ -63,7 +63,7 @@ Each axis score is normalized to `[0, 1]`, where `1.0` = optimal for that criter
 
 **Code reference:**
 ```python
-# queryrouter/core/compatibility_scorer.py, lines 177-221
+# src/queryrouter/core/compatibility_scorer.py
 def _performance_score(self, query_features, model_profile):
     task_scores = query_features[11:21]  # 10 task types
     bench_vec = self.normalizer.benchmark_normalizer.transform(model_profile)
@@ -90,7 +90,7 @@ def _performance_score(self, query_features, model_profile):
 
 **Code reference:**
 ```python
-# queryrouter/core/compatibility_scorer.py, lines 240-287
+# src/queryrouter/core/compatibility_scorer.py
 def _cost_score(self, query_features, model_profile):
     output_length_norm = query_features[21]
     estimated_output_tokens = 50 + output_length_norm * 450
@@ -114,7 +114,7 @@ def _cost_score(self, query_features, model_profile):
 
 **Code reference:**
 ```python
-# queryrouter/core/compatibility_scorer.py, lines 289-304
+# src/queryrouter/core/compatibility_scorer.py
 def _latency_score(self, query_features, model_profile):
     if model_profile.latency_ms is not None:
         normalized = model_profile.latency_ms / self.normalizer.max_latency
@@ -139,7 +139,7 @@ def _latency_score(self, query_features, model_profile):
 
 **Code reference:**
 ```python
-# queryrouter/core/compatibility_scorer.py, lines 306-319
+# src/queryrouter/core/compatibility_scorer.py
 def _ecology_score(self, query_features, model_profile):
     return self.normalizer.eco_normalizer.transform(model_profile)
 ```
@@ -148,7 +148,7 @@ def _ecology_score(self, query_features, model_profile):
 
 ## Default Weight Presets
 
-QueryRouter++ ships with six presets that map `optimize_for` modes to weight vectors. All weights are on the simplex `Δ³` (sum to 1.0).
+QueryRouter++ ships with five presets that map `optimize_for` modes to weight vectors. All weights are on the simplex `Δ³` (sum to 1.0).
 
 | Preset | `w_performance` | `w_cost` | `w_latency` | `w_ecology` | Best For |
 |--------|----------------|----------|-------------|-------------|----------|
@@ -157,9 +157,8 @@ QueryRouter++ ships with six presets that map `optimize_for` modes to weight vec
 | **cost_performance** | 0.40 | 0.40 | 0.10 | 0.10 | Balanced SaaS, production APIs |
 | **ecology** | 0.10 | 0.10 | 0.10 | 0.70 | Green AI initiatives, carbon-conscious users |
 | **balanced** | 0.25 | 0.25 | 0.25 | 0.25 | Default general-purpose use, no strong preference |
-| **latency** | 0.25 | 0.25 | 0.45 | 0.05 | Real-time chat, interactive applications |
 
-**Configuration source:** [`config/preferences_schema.json`](../config/preferences_schema.json), lines 70-77.
+**Configuration source:** `PRESET_WEIGHTS` in [`src/queryrouter/api/schemas.py`](../src/queryrouter/api/schemas.py).
 
 **Usage:**
 ```python
@@ -217,7 +216,7 @@ router = QueryRouter(
 
 **Code reference:**
 ```python
-# queryrouter/core/router.py, lines 66-72, 305-372
+# src/queryrouter/core/router.py
 _DEFAULT_TOOL_BOOST = {
     "delta_first_class": 0.3,
     "delta_mcp": 0.15,
@@ -274,7 +273,7 @@ The API schema validates the sum at request time. Invalid requests return a 422 
 }
 ```
 
-**Validation source:** `queryrouter/api/schemas.py`, `UserPreferences` Pydantic model with custom validator.
+**Validation source:** `src/queryrouter/api/schemas.py`, `UserPreferences` Pydantic model with custom validator.
 
 ---
 
@@ -340,7 +339,7 @@ prefs = UserPreferences(
 
 **Field:** `eco_mode` (bool, default `False`)
 
-**Behavior:** When `True`, applies an ecological bonus to models with known low CO₂ footprints. This is a soft boost (not a hard filter) and interacts with the ecology weight.
+**Behavior:** Reserved. The field is accepted and validated but the router does not read it yet; use the `ecology` preset or a custom `w_ecology` to favour low-CO₂ models.
 
 **Example:**
 ```python
@@ -366,7 +365,7 @@ complexity(q) = 0.65 × max(reasoning, coding, math) + 0.35 × length
 - `reasoning`, `coding`, `math` — Task-type scores from query features (normalized 0-1)
 - `length` — Normalized word count (0-1)
 
-**Threshold:** Default `τ = 0.6` (configurable via `QUERYROUTER_CASCADE_THRESHOLD` or `cascade_threshold` at router init).
+**Threshold:** Default `τ = 0.6` (configurable via `cascade_threshold` at router init or per LibreChat preset in `config/presets.yaml`).
 
 **Routing decision:**
 - If `complexity(q) ≥ τ` → Escalate to the **strongest model** (highest cost, best performance)
@@ -374,7 +373,7 @@ complexity(q) = 0.65 × max(reasoning, coding, math) + 0.35 × length
 
 **Code reference:**
 ```python
-# queryrouter/core/router.py, lines 278-302
+# src/queryrouter/core/router.py
 def _query_complexity(self, query_features):
     hard_task_score = max(
         query_features[15],  # reasoning
@@ -544,7 +543,7 @@ router = QueryRouter(tool_boost={"delta_first_class": 0.15, "cap": 0.25})
 
 **Diagnosis:** Check your weight vector — is `w_ecology ≤ 0.1`?
 
-**Fix:** Use the `ecology` preset (`w_ecology = 0.70`) or set `eco_mode=True` for a soft boost.
+**Fix:** Use the `ecology` preset (`w_ecology = 0.70`) or a custom weight vector with a higher `w_ecology`.
 
 **Note:** With 2026 model data, the most ecological models (Gemini Flash, LLaMA Maverick) are also among the cheapest — so `w_ecology` and `w_cost` often agree. Ecological differentiation is more visible when comparing high-performance models.
 
@@ -571,7 +570,7 @@ router = QueryRouter(tool_boost={"delta_first_class": 0.15, "cap": 0.25})
 - [CONTRIBUTING.md](../CONTRIBUTING.md) — Data quality policy for benchmark/cost/eco data
 
 **Implementation references:**
-- [`queryrouter/core/compatibility_scorer.py`](../queryrouter/core/compatibility_scorer.py) — Core scoring logic
-- [`queryrouter/core/router.py`](../queryrouter/core/router.py) — Tool boost and weight shifting
-- [`queryrouter/core/preference_engine.py`](../queryrouter/core/preference_engine.py) — Preset resolution and hard constraints
+- [`src/queryrouter/core/compatibility_scorer.py`](../src/queryrouter/core/compatibility_scorer.py) — Core scoring logic
+- [`src/queryrouter/core/router.py`](../src/queryrouter/core/router.py) — Tool boost and weight shifting
+- [`src/queryrouter/core/preference_engine.py`](../src/queryrouter/core/preference_engine.py) — Preset resolution and hard constraints
 - [`config/presets.yaml`](../config/presets.yaml) — LibreChat 4-mode preset definitions
