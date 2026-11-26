@@ -140,7 +140,7 @@ curl http://localhost:8000/models | jq '.models[].model_id'
 # claude-opus-4-6, claude-sonnet-4-6, claude-haiku-4-5
 # gpt-4-1, gpt-4-1-mini, o3
 # gemini-2-5-pro, gemini-2-5-flash
-# mistral-large-3, llama-4-maverick, qwen-3-235b, deepseek-v3
+# mistral-large-3, llama-4-maverick, qwen3-235b, deepseek-v3
 
 # 3. Test minimal request (no filters)
 curl -X POST http://localhost:8000/route \
