@@ -144,7 +144,7 @@ presets:
     allowed_models:
       - "gemini-2-5-flash"      # 15g CO2/MTok
       - "llama-4-maverick"      # 18g CO2/MTok
-      - "qwen-3-235b"           # 22g CO2/MTok
+      - "qwen3-235b"            # 22g CO2/MTok
     weights:
       w_performance: 0.15
       w_cost: 0.10
@@ -174,7 +174,7 @@ presets:
     icon: "💰"
     allowed_models:
       - "deepseek-v3"          # $0.42/MTok output
-      - "qwen-3-235b"          # $1.50/MTok output
+      - "qwen3-235b"           # $1.50/MTok output
       - "gemini-2-5-flash"     # $2.50/MTok output
     weights:
       w_performance: 0.10

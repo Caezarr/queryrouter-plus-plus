@@ -10,7 +10,7 @@ presets:
     allowed_models:
       - "gemini-2-5-flash"
       - "llama-4-maverick"
-      - "qwen-3-235b"
+      - "qwen3-235b"
     weights:
       w_performance: 0.15
       w_cost: 0.10
@@ -40,7 +40,7 @@ presets:
     icon: "💰"
     allowed_models:
       - "deepseek-v3"
-      - "qwen-3-235b"
+      - "qwen3-235b"
       - "gemini-2-5-flash"
     weights:
       w_performance: 0.10
